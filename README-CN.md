@@ -90,5 +90,5 @@ func (l *CustomLogger) Debug(a ...any) {
 自主实现Write方法时需要注意参数[]byte不应该超出该方法的作用域，否则可能会导致数据并发问题并导致混乱。
 
 ### 性能
-记录一条消息和3个字段：
+记录一条消息和3个字段(禁用caller输出,并发测试)：
 ![bench](bench.webp)
