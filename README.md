@@ -90,5 +90,5 @@ If you want to implement more powerful output control, such as log file splittin
 When implementing the Write method on your own, it is important to note that the []byte parameter should not exceed the scope of the method, otherwise data concurrency issues may occur and result in confusion.
 
 ### Performance
-Log a message and 3 fields:
+Log a message and 3 fields(disable caller output and RunParallel):
 ![bench](bench.webp)
