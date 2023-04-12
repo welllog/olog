@@ -43,7 +43,7 @@ The plain output is as follows:
 
 ### contextLogger uses
 ```go
-    SetDefCtxHandle(func(ctx context.Context) []Field {
+        SetDefCtxHandle(func(ctx context.Context) []Field {
 		var fs []Field
 		uid, ok := ctx.Value("uid").(int)
 		if ok {
@@ -57,10 +57,11 @@ The plain output is as follows:
 		return fs
 	})
 
-    logger := WithContext(GetLogger(), context.WithValue(context.Background(), "uid", 3))
+        logger := WithContext(GetLogger(), context.WithValue(context.Background(), "uid", 3))
 	logger.Debug("test")
 	
 	logger = WithContext(logger, context.WithValue(context.Background(), "name", "bob"))
+        logger = WithEntries(logger, map[string]any{"requestId": "ae32fec"})
 	logger.Debug("test 2")
 ```
 
@@ -75,11 +76,11 @@ func (l *CustomLogger) Slow(a ...any) {
 }
 
 func (l *CustomLogger) Stat(a ...any) {
-	Log(INFO, WithPrint(a...), WithTag("stat"), WithCallerSkipOne)
+	l.Log(INFO, WithPrint(a...), WithTag("stat"), WithCallerSkipOne)
 }
 
 func (l *CustomLogger) Debug(a ...any) {
-	Log(DEBUG, WithPrint(a...), WithCallerSkipOne, WithCaller(true))
+	l.Log(DEBUG, WithPrint(a...), WithCallerSkipOne, WithCaller(true))
 }
 ```
 
