@@ -349,7 +349,6 @@ func TestPlainOutput(t *testing.T) {
 	Errorw("hello world", Field{Key: "success", Value: true})
 	Log(DEBUG, WithTag("trace"), WithPrintMsg("hello world"), WithCaller(false),
 		WithFields(Field{Key: "price", Value: 32.5}))
-	Fatal("fatal exit")
 }
 
 func BenchmarkInfo(b *testing.B) {
