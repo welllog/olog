@@ -135,6 +135,16 @@ func writeJsonValue(value any, buf *Buffer, quote bool) {
 			return
 		}
 		_, _ = buf.Write(v)
+	case error:
+		if quote {
+			buf.buf = strconv.AppendQuote(buf.buf, v.Error())
+			return
+		}
+		buf.buf = append(buf.buf, v.Error()...)
+	case time.Time:
+		_ = buf.WriteByte('"')
+		buf.buf = v.AppendFormat(buf.buf, time.RFC3339)
+		_ = buf.WriteByte('"')
 	case nil:
 		_, _ = buf.WriteString("null")
 	case int:
