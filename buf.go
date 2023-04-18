@@ -41,13 +41,7 @@ type Buffer struct {
 // NewBuffer creates and initializes a new Buffer using buf as its initial contents.
 func NewBuffer(buf []byte) *Buffer { return &Buffer{buf: buf} }
 
-func (b *Buffer) Bytes() []byte { return b.buf }
-
 func (b *Buffer) Len() int { return len(b.buf) }
-
-func (b *Buffer) ResetBuffer(buf []byte) {
-	b.buf = buf
-}
 
 func (b *Buffer) Reset() {
 	b.buf = b.buf[:0]

@@ -25,30 +25,30 @@ func jsonEncode(o *logOption, w Writer) {
 	buf := getBuf()
 
 	_, _ = buf.WriteString(`{"@timestamp":"`)
-	buf.ResetBuffer(time.Now().AppendFormat(buf.Bytes(), o.timeFormat))
+	buf.buf = time.Now().AppendFormat(buf.buf, o.timeFormat)
 	_, _ = buf.WriteString(`","level":"`)
 	_, _ = buf.WriteString(o.tag)
 	if o.enableCaller {
 		_, _ = buf.WriteString(`","caller":"`)
 		_, _ = buf.WriteString(o.file)
 		_ = buf.WriteByte(':')
-		buf.ResetBuffer(strconv.AppendInt(buf.Bytes(), int64(o.line), 10))
+		buf.buf = strconv.AppendInt(buf.buf, int64(o.line), 10)
 	}
 	_, _ = buf.WriteString(`","content":`)
 
 	l := len(buf.buf)
 	switch o.msgType {
 	case msgTypePrint:
-		buf.ResetBuffer(fmt.Append(buf.Bytes(), o.msgArgs...))
+		buf.buf = fmt.Append(buf.buf, o.msgArgs...)
 	case msgTypePrintf:
-		buf.ResetBuffer(fmt.Appendf(buf.Bytes(), o.msgOrFormat, o.msgArgs...))
+		buf.buf = fmt.Appendf(buf.buf, o.msgOrFormat, o.msgArgs...)
 	case msgTypePrintMsg:
 		_, _ = buf.WriteString(o.msgOrFormat)
 	}
 
 	quoteStr := string(buf.buf[l:])
 	buf.buf = buf.buf[:l]
-	buf.ResetBuffer(strconv.AppendQuote(buf.Bytes(), quoteStr))
+	buf.buf = strconv.AppendQuote(buf.buf, quoteStr)
 
 	// Loop over the fields of the logOption object and write them to the buffer as JSON.
 	for _, field := range o.fields {
@@ -63,7 +63,7 @@ func jsonEncode(o *logOption, w Writer) {
 	_, _ = buf.WriteString("}\n")
 
 	// Write the contents of the buffer to the Writer.
-	_, _ = w.Write(o.level, buf.Bytes())
+	_, _ = w.Write(o.level, buf.buf)
 
 	// Reset the buffer and return it to the pool for re-use.
 	putBuf(buf)
@@ -73,7 +73,7 @@ func jsonEncode(o *logOption, w Writer) {
 // Takes a pointer to the logOption object and a Writer object as input.
 func plainEncode(o *logOption, w Writer) {
 	buf := getBuf()
-	buf.ResetBuffer(time.Now().AppendFormat(buf.Bytes(), o.timeFormat))
+	buf.buf = time.Now().AppendFormat(buf.buf, o.timeFormat)
 	_ = buf.WriteByte(sep)
 	if o.enableColor {
 		writeLevelWithColor(o.level, o.tag, buf)
@@ -84,15 +84,15 @@ func plainEncode(o *logOption, w Writer) {
 	if o.enableCaller {
 		_, _ = buf.WriteString(o.file)
 		_ = buf.WriteByte(':')
-		buf.ResetBuffer(strconv.AppendInt(buf.Bytes(), int64(o.line), 10))
+		buf.buf = strconv.AppendInt(buf.buf, int64(o.line), 10)
 		_ = buf.WriteByte(sep)
 	}
 
 	switch o.msgType {
 	case msgTypePrint:
-		buf.ResetBuffer(fmt.Append(buf.Bytes(), o.msgArgs...))
+		buf.buf = fmt.Append(buf.buf, o.msgArgs...)
 	case msgTypePrintf:
-		buf.ResetBuffer(fmt.Appendf(buf.Bytes(), o.msgOrFormat, o.msgArgs...))
+		buf.buf = fmt.Appendf(buf.buf, o.msgOrFormat, o.msgArgs...)
 	case msgTypePrintMsg:
 		_, _ = buf.WriteString(o.msgOrFormat)
 	}
@@ -109,7 +109,7 @@ func plainEncode(o *logOption, w Writer) {
 	_ = buf.WriteByte('\n')
 
 	// Write the contents of the buffer to the Writer.
-	_, _ = w.Write(o.level, buf.Bytes())
+	_, _ = w.Write(o.level, buf.buf)
 
 	// Reset the buffer and return it to the pool for re-use.
 	putBuf(buf)
@@ -119,59 +119,59 @@ func writeJsonValue(value any, buf *Buffer, quote bool) {
 	switch v := value.(type) {
 	case string:
 		if quote {
-			buf.ResetBuffer(strconv.AppendQuote(buf.Bytes(), v))
+			buf.buf = strconv.AppendQuote(buf.buf, v)
 			return
 		}
 		_, _ = buf.WriteString(v)
 	case fmt.Stringer:
 		if quote {
-			buf.ResetBuffer(strconv.AppendQuote(buf.Bytes(), v.String()))
+			buf.buf = strconv.AppendQuote(buf.buf, v.String())
 			return
 		}
 		_, _ = buf.WriteString(v.String())
 	case []byte:
 		if quote {
-			buf.ResetBuffer(strconv.AppendQuote(buf.Bytes(), *(*string)(unsafe.Pointer(&v))))
+			buf.buf = strconv.AppendQuote(buf.buf, *(*string)(unsafe.Pointer(&v)))
 			return
 		}
 		_, _ = buf.Write(v)
 	case nil:
 		_, _ = buf.WriteString("null")
 	case int:
-		buf.ResetBuffer(strconv.AppendInt(buf.Bytes(), int64(v), 10))
+		buf.buf = strconv.AppendInt(buf.buf, int64(v), 10)
 	case int8:
-		buf.ResetBuffer(strconv.AppendInt(buf.Bytes(), int64(v), 10))
+		buf.buf = strconv.AppendInt(buf.buf, int64(v), 10)
 	case int16:
-		buf.ResetBuffer(strconv.AppendInt(buf.Bytes(), int64(v), 10))
+		buf.buf = strconv.AppendInt(buf.buf, int64(v), 10)
 	case int32:
-		buf.ResetBuffer(strconv.AppendInt(buf.Bytes(), int64(v), 10))
+		buf.buf = strconv.AppendInt(buf.buf, int64(v), 10)
 	case int64:
-		buf.ResetBuffer(strconv.AppendInt(buf.Bytes(), v, 10))
+		buf.buf = strconv.AppendInt(buf.buf, v, 10)
 	case uint:
-		buf.ResetBuffer(strconv.AppendUint(buf.Bytes(), uint64(v), 10))
+		buf.buf = strconv.AppendUint(buf.buf, uint64(v), 10)
 	case uint8:
-		buf.ResetBuffer(strconv.AppendUint(buf.Bytes(), uint64(v), 10))
+		buf.buf = strconv.AppendUint(buf.buf, uint64(v), 10)
 	case uint16:
-		buf.ResetBuffer(strconv.AppendUint(buf.Bytes(), uint64(v), 10))
+		buf.buf = strconv.AppendUint(buf.buf, uint64(v), 10)
 	case uint32:
-		buf.ResetBuffer(strconv.AppendUint(buf.Bytes(), uint64(v), 10))
+		buf.buf = strconv.AppendUint(buf.buf, uint64(v), 10)
 	case uint64:
-		buf.ResetBuffer(strconv.AppendUint(buf.Bytes(), v, 10))
+		buf.buf = strconv.AppendUint(buf.buf, v, 10)
 	case float32:
-		buf.ResetBuffer(strconv.AppendFloat(buf.Bytes(), float64(v), 'f', -1, 32))
+		buf.buf = strconv.AppendFloat(buf.buf, float64(v), 'f', -1, 32)
 	case float64:
-		buf.ResetBuffer(strconv.AppendFloat(buf.Bytes(), v, 'f', -1, 64))
+		buf.buf = strconv.AppendFloat(buf.buf, v, 'f', -1, 64)
 	case bool:
-		buf.ResetBuffer(strconv.AppendBool(buf.Bytes(), v))
+		buf.buf = strconv.AppendBool(buf.buf, v)
 	default:
 		if quote {
 			l := len(buf.buf)
-			buf.ResetBuffer(fmt.Appendf(buf.Bytes(), "%+v", value))
+			buf.buf = fmt.Appendf(buf.buf, "%+v", value)
 			quoteStr := string(buf.buf[l:])
 			buf.buf = buf.buf[:l]
-			buf.ResetBuffer(strconv.AppendQuote(buf.Bytes(), quoteStr))
+			buf.buf = strconv.AppendQuote(buf.buf, quoteStr)
 			return
 		}
-		buf.ResetBuffer(fmt.Appendf(buf.Bytes(), "%+v", value))
+		buf.buf = fmt.Appendf(buf.buf, "%+v", value)
 	}
 }
