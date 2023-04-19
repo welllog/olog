@@ -10,7 +10,7 @@ import (
 )
 
 func initTestLogger() {
-	SetLevel(DEBUG)
+	SetLevel(TRACE)
 	SetTimeFormat("")
 	SetColor(false)
 	SetCaller(false)
@@ -35,6 +35,11 @@ func TestPrintf(t *testing.T) {
 			name: "Warnf",
 			fn:   Warnf,
 			lv:   WARN,
+		},
+		{
+			name: "Noticef",
+			fn:   Noticef,
+			lv:   NOTICE,
 		},
 		{
 			name: "Infof",
@@ -89,6 +94,11 @@ func TestPrint(t *testing.T) {
 			lv:   WARN,
 		},
 		{
+			name: "Notice",
+			fn:   Notice,
+			lv:   NOTICE,
+		},
+		{
 			name: "Info",
 			fn:   Info,
 			lv:   INFO,
@@ -141,6 +151,11 @@ func TestPrintw(t *testing.T) {
 			lv:   WARN,
 		},
 		{
+			name: "Noticew",
+			fn:   Noticew,
+			lv:   NOTICE,
+		},
+		{
 			name: "Infow",
 			fn:   Infow,
 			lv:   INFO,
@@ -158,7 +173,7 @@ func TestPrintw(t *testing.T) {
 	for _, tt := range tests {
 		SetEncode(PLAIN)
 		tt.fn("test", Field{Key: "age", Value: 18}, Field{Key: "addr", Value: "new york"})
-		want := fmt.Sprintf("\t%s\t%s\t%s\t%s\t%s\t%s\n", tt.lv.String(), "test", "age", "18", "addr", "new york")
+		want := fmt.Sprintf("\t%s\t%s\t%s=%s\t%s=%s\n", tt.lv.String(), "test", "age", "18", "addr", "new york")
 		if buf.String() != want {
 			t.Errorf("%s() = %s, want = %s", tt.name, buf.String(), want)
 		}
@@ -183,8 +198,10 @@ func TestSetLevel(t *testing.T) {
 	logging := func() {
 		Error("test")
 		Warn("test")
+		Notice("test")
 		Info("test")
 		Debug("test")
+		Trace("test")
 	}
 
 	getLines := func() int {
@@ -217,7 +234,7 @@ func TestSetLevel(t *testing.T) {
 	}
 
 	buf.Reset()
-	SetLevel(INFO)
+	SetLevel(NOTICE)
 	logging()
 	lines = getLines()
 	want = 3
@@ -226,10 +243,28 @@ func TestSetLevel(t *testing.T) {
 	}
 
 	buf.Reset()
-	SetLevel(DEBUG)
+	SetLevel(INFO)
 	logging()
 	lines = getLines()
 	want = 4
+	if lines != want {
+		t.Errorf("lines = %d, want = %d", lines, want)
+	}
+
+	buf.Reset()
+	SetLevel(DEBUG)
+	logging()
+	lines = getLines()
+	want = 5
+	if lines != want {
+		t.Errorf("lines = %d, want = %d", lines, want)
+	}
+
+	buf.Reset()
+	SetLevel(TRACE)
+	logging()
+	lines = getLines()
+	want = 6
 	if lines != want {
 		t.Errorf("lines = %d, want = %d", lines, want)
 	}
@@ -339,16 +374,18 @@ func logging(tt struct {
 
 func TestPlainOutput(t *testing.T) {
 	SetEncode(PLAIN)
+	SetColor(true)
+	Trace("hello world")
+	Tracew("hello", Field{Key: "name", Value: "bob"})
 	Debug("hello world")
-	Debugw("hello", Field{Key: "name", Value: "bob"})
-	Info("hello world")
 	Infow("hello", Field{Key: "name", Value: "linda"}, Field{Key: "age", Value: 18})
+	Noticef("hello %s", "world")
 	Warnf("hello %s", "world")
 	Warnw("hello", Field{Key: "order_no", Value: "AWESDDF"})
-	Error("hello world")
 	Errorw("hello world", Field{Key: "success", Value: true})
-	Log(DEBUG, WithTag("trace"), WithPrintMsg("hello world"), WithCaller(false),
-		WithFields(Field{Key: "price", Value: 32.5}))
+	Log(DEBUG, WithTag("print"), WithPrintMsg("hello world"), WithCaller(false),
+		WithFields(Field{Key: "price", Value: 32.5}), WithCallStack(1))
+	//Fatal("fatal exit")
 }
 
 func BenchmarkInfo(b *testing.B) {

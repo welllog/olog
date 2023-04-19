@@ -4,12 +4,17 @@ package olog
 
 import (
 	"errors"
+	"fmt"
+	"strconv"
 	"sync"
+	"time"
 	"unicode/utf8"
+	"unsafe"
 )
 
 const smallBufferSize = 64
 const maxInt = int(^uint(0) >> 1)
+const lowerhex = "0123456789abcdef"
 
 // Declare a new sync.Pool object, which allows for efficient
 // re-use of objects across goroutines.
@@ -41,12 +46,18 @@ type Buffer struct {
 // NewBuffer creates and initializes a new Buffer using buf as its initial contents.
 func NewBuffer(buf []byte) *Buffer { return &Buffer{buf: buf} }
 
-func (b *Buffer) Bytes() []byte { return b.buf }
-
 func (b *Buffer) Len() int { return len(b.buf) }
 
-func (b *Buffer) ResetBuffer(buf []byte) {
-	b.buf = buf
+func (b *Buffer) Bytes() []byte {
+	return b.buf
+}
+
+func (b *Buffer) Back(n int) {
+	l := len(b.buf)
+	if l < n {
+		n = l
+	}
+	b.buf = b.buf[:l-n]
 }
 
 func (b *Buffer) Reset() {
@@ -90,6 +101,181 @@ func (b *Buffer) WriteRune(r rune) (n int, err error) {
 	}
 	b.buf = utf8.AppendRune(b.buf[:m], r)
 	return len(b.buf) - m, nil
+}
+
+func (b *Buffer) WriteTime(t time.Time, layout string) {
+	b.buf = t.AppendFormat(b.buf, layout)
+}
+
+func (b *Buffer) WriteInt64(n int64) {
+	b.buf = strconv.AppendInt(b.buf, n, 10)
+}
+
+func (b *Buffer) WriteSprint(args ...any) {
+	b.buf = fmt.Append(b.buf, args...)
+}
+
+func (b *Buffer) WriteSprintf(format string, args ...any) {
+	b.buf = fmt.Appendf(b.buf, format, args...)
+}
+
+func (b *Buffer) WriteQuoteSprint(args ...any) {
+	l := len(b.buf)
+	b.buf = fmt.Append(b.buf, args...)
+	s := string(b.buf[l:])
+	b.buf = b.buf[:l]
+	b.WriteQuoteString(s)
+}
+
+func (b *Buffer) WriteQuoteSprintf(format string, args ...any) {
+	l := len(b.buf)
+	b.buf = fmt.Appendf(b.buf, format, args...)
+	s := string(b.buf[l:])
+	b.buf = b.buf[:l]
+	b.WriteQuoteString(s)
+}
+
+func (b *Buffer) WriteAny(value any, quoteStr bool) {
+	switch v := value.(type) {
+	case string:
+		if quoteStr {
+			b.WriteQuoteString(v)
+			return
+		}
+		_, _ = b.WriteString(v)
+	case []byte:
+		if quoteStr {
+			b.WriteQuoteString(*(*string)(unsafe.Pointer(&v)))
+			return
+		}
+		_, _ = b.Write(v)
+	case error:
+		if quoteStr {
+			b.WriteQuoteString(v.Error())
+			return
+		}
+		_, _ = b.WriteString(v.Error())
+	case time.Time:
+		if quoteStr {
+			_ = b.WriteByte('"')
+			b.buf = v.AppendFormat(b.buf, time.RFC3339)
+			_ = b.WriteByte('"')
+			return
+		}
+		b.buf = v.AppendFormat(b.buf, time.RFC3339)
+	case nil:
+		_, _ = b.WriteString("null")
+	case int:
+		b.buf = strconv.AppendInt(b.buf, int64(v), 10)
+	case int8:
+		b.buf = strconv.AppendInt(b.buf, int64(v), 10)
+	case int16:
+		b.buf = strconv.AppendInt(b.buf, int64(v), 10)
+	case int32:
+		b.buf = strconv.AppendInt(b.buf, int64(v), 10)
+	case int64:
+		b.buf = strconv.AppendInt(b.buf, v, 10)
+	case uint:
+		b.buf = strconv.AppendUint(b.buf, uint64(v), 10)
+	case uint8:
+		b.buf = strconv.AppendUint(b.buf, uint64(v), 10)
+	case uint16:
+		b.buf = strconv.AppendUint(b.buf, uint64(v), 10)
+	case uint32:
+		b.buf = strconv.AppendUint(b.buf, uint64(v), 10)
+	case uint64:
+		b.buf = strconv.AppendUint(b.buf, v, 10)
+	case float32:
+		b.buf = strconv.AppendFloat(b.buf, float64(v), 'f', -1, 32)
+	case float64:
+		b.buf = strconv.AppendFloat(b.buf, v, 'f', -1, 64)
+	case bool:
+		b.buf = strconv.AppendBool(b.buf, v)
+	case fmt.Stringer:
+		if quoteStr {
+			b.WriteQuoteString(v.String())
+			return
+		}
+		_, _ = b.WriteString(v.String())
+	default:
+		if quoteStr {
+			b.WriteQuoteSprintf("%+v", value)
+			return
+		}
+		b.WriteSprintf("%+v", value)
+	}
+}
+
+func (b *Buffer) WriteQuoteString(s string) {
+	if cap(b.buf)-len(b.buf) < len(s) {
+		b.buf = growSlice(b.buf, len(s)+2)
+	}
+	_ = b.WriteByte('"')
+	for width := 0; len(s) > 0; s = s[width:] {
+		r := rune(s[0])
+		width = 1
+		if r >= utf8.RuneSelf {
+			r, width = utf8.DecodeRuneInString(s)
+		}
+		if width == 1 && r == utf8.RuneError {
+			_, _ = b.WriteString(`\x`)
+			_ = b.WriteByte(lowerhex[s[0]>>4])
+			_ = b.WriteByte(lowerhex[s[0]&0xF])
+			continue
+		}
+		b.WriteEscapedRune(r)
+	}
+	_ = b.WriteByte('"')
+}
+
+func (b *Buffer) WriteEscapedRune(r rune) {
+	if r == '"' || r == '\\' { // always backslashed
+		_ = b.WriteByte('\\')
+		_ = b.WriteByte(byte(r))
+		return
+	}
+
+	if strconv.IsPrint(r) {
+		_, _ = b.WriteRune(r)
+		return
+	}
+
+	switch r {
+	case '\a':
+		_, _ = b.WriteString(`\a`)
+	case '\b':
+		_, _ = b.WriteString(`\b`)
+	case '\f':
+		_, _ = b.WriteString(`\f`)
+	case '\n':
+		_, _ = b.WriteString(`\n`)
+	case '\r':
+		_, _ = b.WriteString(`\r`)
+	case '\t':
+		_, _ = b.WriteString(`\t`)
+	case '\v':
+		_, _ = b.WriteString(`\v`)
+	default:
+		switch {
+		case r < ' ' || r == 0x7f:
+			_, _ = b.WriteString(`\x`)
+			_ = b.WriteByte(lowerhex[byte(r)>>4])
+			_ = b.WriteByte(lowerhex[byte(r)&0xF])
+		case !utf8.ValidRune(r):
+			r = 0xFFFD
+			fallthrough
+		case r < 0x10000:
+			_, _ = b.WriteString(`\u`)
+			for s := 12; s >= 0; s -= 4 {
+				_ = b.WriteByte(lowerhex[r>>uint(s)&0xF])
+			}
+		default:
+			_, _ = b.WriteString(`\U`)
+			for s := 28; s >= 0; s -= 4 {
+				_ = b.WriteByte(lowerhex[r>>uint(s)&0xF])
+			}
+		}
+	}
 }
 
 // tryGrowByReslice is a inlineable version of grow for the fast-case where the

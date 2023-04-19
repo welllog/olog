@@ -99,6 +99,24 @@ func (c *ctxLogger) Warnw(msg string, fields ...Field) {
 	}
 }
 
+func (c *ctxLogger) Notice(a ...any) {
+	if c.IsEnabled(NOTICE) {
+		c.log(NOTICE, WithPrint(a...), WithFields(c.buildFields()...))
+	}
+}
+
+func (c *ctxLogger) Noticef(format string, a ...any) {
+	if c.IsEnabled(NOTICE) {
+		c.log(NOTICE, WithPrintf(format, a...), WithFields(c.buildFields()...))
+	}
+}
+
+func (c *ctxLogger) Noticew(msg string, fields ...Field) {
+	if c.IsEnabled(NOTICE) {
+		c.log(NOTICE, WithPrintMsg(msg), WithFields(c.buildFields(fields...)...))
+	}
+}
+
 func (c *ctxLogger) Info(a ...any) {
 	if c.IsEnabled(INFO) {
 		c.log(INFO, WithPrint(a...), WithFields(c.buildFields()...))
@@ -132,6 +150,24 @@ func (c *ctxLogger) Debugf(format string, a ...any) {
 func (c *ctxLogger) Debugw(msg string, fields ...Field) {
 	if c.IsEnabled(DEBUG) {
 		c.log(DEBUG, WithPrintMsg(msg), WithFields(c.buildFields(fields...)...))
+	}
+}
+
+func (c *ctxLogger) Trace(a ...any) {
+	if c.IsEnabled(TRACE) {
+		c.log(TRACE, WithPrint(a...), WithFields(c.buildFields()...))
+	}
+}
+
+func (c *ctxLogger) Tracef(format string, a ...any) {
+	if c.IsEnabled(TRACE) {
+		c.log(TRACE, WithPrintf(format, a...), WithFields(c.buildFields()...))
+	}
+}
+
+func (c *ctxLogger) Tracew(msg string, fields ...Field) {
+	if c.IsEnabled(TRACE) {
+		c.log(TRACE, WithPrintMsg(msg), WithFields(c.buildFields(fields...)...))
 	}
 }
 

@@ -6,37 +6,37 @@
 * olog is a lightweight, high-performance, out-of-the-box logging library that relies solely on the Go standard library.
 * Supports outputting logs in both JSON and plain text formats.
 * Supports setting context handling functions to retrieve fields from the context for output.
-* Supports five log levels: DEBUG, INFO, WARN, ERROR, and FATAL, corresponding to the "debug", "info", "warn", "error", and "fatal" tags. Users can also define their own semantic tags, such as "slow" and "stat".
+* Supports seven log levels: TRACE, DEBUG, INFO, NOTICE, WARN, ERROR, and FATAL, corresponding to the "trace", "debug", "info", "notice", "warn", "error", and "fatal" tags. Users can also define their own semantic tags, such as "slow" and "stat".
 * Provides output switch control for all log levels except FATAL.
 * Enhances control over caller printing. Users can disable caller printing in global settings to improve performance, but can enable support for caller printing when printing certain critical logs.
 * Provides a Logger interface for users to easily construct their own logger.
 
 ### code example
 ```go
+    Trace("hello world")
+    Tracew("hello", Field{Key: "name", Value: "bob"})
     Debug("hello world")
-    Debugw("hello", Field{Key: "name", Value: "bob"})
-    Info("hello world")
     Infow("hello", Field{Key: "name", Value: "linda"}, Field{Key: "age", Value: 18})
+    Noticef("hello %s", "world")
     Warnf("hello %s", "world")
     Warnw("hello", Field{Key: "order_no", Value: "AWESDDF"})
-    Error("hello world")
     Errorw("hello world", Field{Key: "success", Value: true})
-    Log(DEBUG, WithTag("trace"), WithPrintMsg("hello world"), WithCaller(false),
-        WithFields(Field{Key: "price", Value: 32.5}))
+    Log(DEBUG, WithTag("print"), WithPrintMsg("hello world"), WithCaller(false),
+        WithFields(Field{Key: "price", Value: 32.5}), WithCallStack(1))
     Fatal("fatal exit")
 ```
 The json output is as follows:
 ```json
-{"@timestamp":"2023-04-11T16:54:19+08:00","level":"debug","caller":"olog/log_test.go:501","content":"hello world"}
-{"@timestamp":"2023-04-11T16:54:19+08:00","level":"debug","caller":"olog/log_test.go:502","content":"hello","name":"bob"}
-{"@timestamp":"2023-04-11T16:54:19+08:00","level":"info","caller":"olog/log_test.go:503","content":"hello world"}
-{"@timestamp":"2023-04-11T16:54:19+08:00","level":"info","caller":"olog/log_test.go:504","content":"hello","name":"linda","age":18}
-{"@timestamp":"2023-04-11T16:54:19+08:00","level":"warn","caller":"olog/log_test.go:505","content":"hello world"}
-{"@timestamp":"2023-04-11T16:54:19+08:00","level":"warn","caller":"olog/log_test.go:506","content":"hello","order_no":"AWESDDF"}
-{"@timestamp":"2023-04-11T16:54:19+08:00","level":"error","caller":"olog/log_test.go:507","content":"hello world"}
-{"@timestamp":"2023-04-11T16:54:19+08:00","level":"error","caller":"olog/log_test.go:508","content":"hello world","success":true}
-{"@timestamp":"2023-04-11T16:54:19+08:00","level":"trace","content":"hello world","price":32.5}
-{"@timestamp":"2023-04-11T16:54:19+08:00","level":"fatal","caller":"olog/log_test.go:511","content":"fatal exit"}
+{"@timestamp":"2023-04-20T00:25:35+08:00","level":"trace","caller":"olog/log_test.go:377","content":"hello world","stack":"olog/log_test.go:377&github.com/welllog/olog.TestPlainOutput testing/testing.go:1576&testing.tRunner runtime/asm_arm64.s:1172&runtime.goexit"}
+{"@timestamp":"2023-04-20T00:25:35+08:00","level":"trace","caller":"olog/log_test.go:378","content":"hello","name":"bob","stack":"olog/log_test.go:378&github.com/welllog/olog.TestPlainOutput testing/testing.go:1576&testing.tRunner runtime/asm_arm64.s:1172&runtime.goexit"}
+{"@timestamp":"2023-04-20T00:25:35+08:00","level":"debug","caller":"olog/log_test.go:379","content":"hello world"}
+{"@timestamp":"2023-04-20T00:25:35+08:00","level":"info","caller":"olog/log_test.go:380","content":"hello","name":"linda","age":18}
+{"@timestamp":"2023-04-20T00:25:35+08:00","level":"notice","caller":"olog/log_test.go:381","content":"hello world"}
+{"@timestamp":"2023-04-20T00:25:35+08:00","level":"warn","caller":"olog/log_test.go:382","content":"hello world"}
+{"@timestamp":"2023-04-20T00:25:35+08:00","level":"warn","caller":"olog/log_test.go:383","content":"hello","order_no":"AWESDDF"}
+{"@timestamp":"2023-04-20T00:25:35+08:00","level":"error","caller":"olog/log_test.go:384","content":"hello world","success":true}
+{"@timestamp":"2023-04-20T00:25:35+08:00","level":"print","content":"hello world","price":32.5,"stack":"olog/log_test.go:385&github.com/welllog/olog.TestPlainOutput"}
+{"@timestamp":"2023-04-20T00:25:35+08:00","level":"fatal","caller":"olog/log_test.go:387","content":"fatal exit"}
 ```
 The plain output is as follows:
 ![plain](plain.webp)
@@ -92,4 +92,20 @@ When implementing the Write method on your own, it is important to note that the
 
 ### Performance
 Log a message and 3 fields(disable caller output and RunParallel):
-![bench](bench.webp)
+```
+goos: darwin
+goarch: arm64
+pkg: github.com/welllog/olog
+BenchmarkInfo
+BenchmarkInfo/std.logger
+BenchmarkInfo/std.logger-10         	 3740652	       284.4 ns/op	      48 B/op	       1 allocs/op
+BenchmarkInfo/olog.json
+BenchmarkInfo/olog.json-10          	14560014	        83.89 ns/op	      96 B/op	       1 allocs/op
+BenchmarkInfo/olog.plain
+BenchmarkInfo/olog.plain-10         	20607255	        58.84 ns/op	      96 B/op	       1 allocs/op
+BenchmarkInfo/olog.ctx.json
+BenchmarkInfo/olog.ctx.json-10      	 7297224	       150.4 ns/op	     376 B/op	       6 allocs/op
+BenchmarkInfo/olog.ctx.plain
+BenchmarkInfo/olog.ctx.plain-10     	 8775705	       134.7 ns/op	     376 B/op	       6 allocs/op
+PASS
+```

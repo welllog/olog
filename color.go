@@ -28,10 +28,14 @@ func writeLevelWithColor(level Level, tag string, buf *Buffer) {
 		_, _ = buf.WriteString(Red)
 	case WARN:
 		_, _ = buf.WriteString(Yellow)
+	case NOTICE:
+		_, _ = buf.WriteString(Blue)
 	case INFO:
 		_, _ = buf.WriteString(Green)
 	case DEBUG:
 		_, _ = buf.WriteString(Gray)
+	case TRACE:
+		_, _ = buf.WriteString(Cyan)
 	default:
 		_, _ = buf.WriteString(tag)
 		return
