@@ -23,6 +23,10 @@ func TestCtxPrintf(t *testing.T) {
 			lv:   WARN,
 		},
 		{
+			name: "Noticef",
+			lv:   NOTICE,
+		},
+		{
 			name: "Infof",
 			lv:   INFO,
 		},
@@ -41,6 +45,8 @@ func TestCtxPrintf(t *testing.T) {
 			logger.Errorf("test %s", "printf")
 		case "Warnf":
 			logger.Warnf("test %s", "printf")
+		case "Noticef":
+			logger.Noticef("test %s", "printf")
 		case "Infof":
 			logger.Infof("test %s", "printf")
 		case "Debugf":
@@ -85,6 +91,10 @@ func TestCtxPrint(t *testing.T) {
 			lv:   WARN,
 		},
 		{
+			name: "Notice",
+			lv:   NOTICE,
+		},
+		{
 			name: "Info",
 			lv:   INFO,
 		},
@@ -103,6 +113,8 @@ func TestCtxPrint(t *testing.T) {
 			logger.Error("test ", "print")
 		case "Warn":
 			logger.Warn("test ", "print")
+		case "Notice":
+			logger.Notice("test ", "print")
 		case "Info":
 			logger.Info("test ", "print")
 		case "Debug":
@@ -147,6 +159,10 @@ func TestCtxPrintw(t *testing.T) {
 			lv:   WARN,
 		},
 		{
+			name: "Noticew",
+			lv:   NOTICE,
+		},
+		{
 			name: "Infow",
 			lv:   INFO,
 		},
@@ -164,6 +180,8 @@ func TestCtxPrintw(t *testing.T) {
 			logger.Errorw("test", Field{Key: "age", Value: 18}, Field{Key: "addr", Value: "new york"})
 		case "Warnw":
 			logger.Warnw("test", Field{Key: "age", Value: 18}, Field{Key: "addr", Value: "new york"})
+		case "Noticew":
+			logger.Noticew("test", Field{Key: "age", Value: 18}, Field{Key: "addr", Value: "new york"})
 		case "Infow":
 			logger.Infow("test", Field{Key: "age", Value: 18}, Field{Key: "addr", Value: "new york"})
 		case "Debugw":
@@ -175,7 +193,7 @@ func TestCtxPrintw(t *testing.T) {
 		SetEncode(PLAIN)
 		logger := WithContext(GetLogger(), context.Background())
 		logging(logger, tt.name)
-		want := fmt.Sprintf("\t%s\t%s\t%s\t%s\t%s\t%s\n", tt.lv.String(), "test", "age", "18", "addr", "new york")
+		want := fmt.Sprintf("\t%s\t%s\t%s=%s\t%s=%s\n", tt.lv.String(), "test", "age", "18", "addr", "new york")
 		if buf.String() != want {
 			t.Errorf("%s() = %s, want = %s", tt.name, buf.String(), want)
 		}
@@ -212,14 +230,14 @@ func TestWithContext(t *testing.T) {
 
 	SetEncode(PLAIN)
 	l := WithContext(GetLogger(), ctx)
-	l.Debug("test uid")
+	l.Debug("test 1")
 
 	ctx = context.WithValue(context.Background(), "name", "bob")
 	l = WithContext(l, ctx)
-	l.Debug("test name")
+	l.Debug("test 2")
 
 	l = WithContext(l, context.Background())
-	l.Debug("test name")
+	l.Debug("test 3")
 
 	l = WithEntries(l, map[string]any{
 		"ip":      "127.0.0.1",
@@ -227,9 +245,9 @@ func TestWithContext(t *testing.T) {
 		"success": true,
 	})
 
-	l.Debug("test entries")
+	l.Debug("test 4")
 
 	l = WithContext(l, context.WithValue(context.Background(), "name", "linda"))
-	l.Debug("test override name")
-	l.Log(DEBUG, WithPrintMsg("test log"), WithTag("trace"))
+	l.Debug("test 5")
+	l.Log(DEBUG, WithPrintMsg("test 6"), WithTag("print"), WithCaller(false), WithCallStack(0))
 }

@@ -6,37 +6,37 @@
 * olog是一个轻量级、高性能、开箱即用的日志库，完全依赖于Go标准库。
 * 支持以JSON和纯文本格式输出日志。
 * 支持设置上下文处理函数，以从上下文中检索字段以进行输出。
-* 支持五个日志级别：DEBUG、INFO、WARN、ERROR和FATAL，对应于“debug”、“info”、“warn”、“error”和“fatal”标签。用户还可以定义自己的语义标签，如“slow”和“stat”。
+* 支持七个日志级别：TRACE、DEBUG、INFO、NOTICE、WARN、ERROR和FATAL，对应于“trace”、“debug”、“info”、“notice”、“warn”、“error”和“fatal”标签。用户还可以定义自己的语义标签，如“slow”和“stat”。
 * 提供输出开关控制，除了FATAL之外的所有日志级别都可以控制输出。
 * 增强了对调用者打印的控制。用户可以在全局设置中禁用调用者打印以提高性能，但可以在打印某些关键日志时启用调用者打印支持。
 * 为用户提供了一个Logger接口，以便轻松构建自己的日志记录器。
 
 ### 代码示例
 ```go
-        Debug("hello world")
-	Debugw("hello", Field{Key: "name", Value: "bob"})
-	Info("hello world")
-	Infow("hello", Field{Key: "name", Value: "linda"}, Field{Key: "age", Value: 18})
-	Warnf("hello %s", "world")
-	Warnw("hello", Field{Key: "order_no", Value: "AWESDDF"})
-	Error("hello world")
-	Errorw("hello world", Field{Key: "success", Value: true})
-	Log(DEBUG, WithTag("trace"), WithPrintMsg("hello world"), WithCaller(false),
-		WithFields(Field{Key: "price", Value: 32.5}))
-	Fatal("fatal exit")
+    Trace("hello world")
+    Tracew("hello", Field{Key: "name", Value: "bob"})
+    Debug("hello world")
+    Infow("hello", Field{Key: "name", Value: "linda"}, Field{Key: "age", Value: 18})
+    Noticef("hello %s", "world")
+    Warnf("hello %s", "world")
+    Warnw("hello", Field{Key: "order_no", Value: "AWESDDF"})
+    Errorw("hello world", Field{Key: "success", Value: true})
+    Log(DEBUG, WithTag("print"), WithPrintMsg("hello world"), WithCaller(false),
+        WithFields(Field{Key: "price", Value: 32.5}), WithCallStack(1))
+    Fatal("fatal exit")
 ```
 json输出如下：
 ```json
-{"@timestamp":"2023-04-11T16:54:19+08:00","level":"debug","caller":"olog/log_test.go:501","content":"hello world"}
-{"@timestamp":"2023-04-11T16:54:19+08:00","level":"debug","caller":"olog/log_test.go:502","content":"hello","name":"bob"}
-{"@timestamp":"2023-04-11T16:54:19+08:00","level":"info","caller":"olog/log_test.go:503","content":"hello world"}
-{"@timestamp":"2023-04-11T16:54:19+08:00","level":"info","caller":"olog/log_test.go:504","content":"hello","name":"linda","age":18}
-{"@timestamp":"2023-04-11T16:54:19+08:00","level":"warn","caller":"olog/log_test.go:505","content":"hello world"}
-{"@timestamp":"2023-04-11T16:54:19+08:00","level":"warn","caller":"olog/log_test.go:506","content":"hello","order_no":"AWESDDF"}
-{"@timestamp":"2023-04-11T16:54:19+08:00","level":"error","caller":"olog/log_test.go:507","content":"hello world"}
-{"@timestamp":"2023-04-11T16:54:19+08:00","level":"error","caller":"olog/log_test.go:508","content":"hello world","success":true}
-{"@timestamp":"2023-04-11T16:54:19+08:00","level":"trace","content":"hello world","price":32.5}
-{"@timestamp":"2023-04-11T16:54:19+08:00","level":"fatal","caller":"olog/log_test.go:511","content":"fatal exit"}
+{"@timestamp":"2023-04-20T00:25:35+08:00","level":"trace","caller":"olog/log_test.go:377","content":"hello world","stack":"olog/log_test.go:377&github.com/welllog/olog.TestPlainOutput testing/testing.go:1576&testing.tRunner runtime/asm_arm64.s:1172&runtime.goexit"}
+{"@timestamp":"2023-04-20T00:25:35+08:00","level":"trace","caller":"olog/log_test.go:378","content":"hello","name":"bob","stack":"olog/log_test.go:378&github.com/welllog/olog.TestPlainOutput testing/testing.go:1576&testing.tRunner runtime/asm_arm64.s:1172&runtime.goexit"}
+{"@timestamp":"2023-04-20T00:25:35+08:00","level":"debug","caller":"olog/log_test.go:379","content":"hello world"}
+{"@timestamp":"2023-04-20T00:25:35+08:00","level":"info","caller":"olog/log_test.go:380","content":"hello","name":"linda","age":18}
+{"@timestamp":"2023-04-20T00:25:35+08:00","level":"notice","caller":"olog/log_test.go:381","content":"hello world"}
+{"@timestamp":"2023-04-20T00:25:35+08:00","level":"warn","caller":"olog/log_test.go:382","content":"hello world"}
+{"@timestamp":"2023-04-20T00:25:35+08:00","level":"warn","caller":"olog/log_test.go:383","content":"hello","order_no":"AWESDDF"}
+{"@timestamp":"2023-04-20T00:25:35+08:00","level":"error","caller":"olog/log_test.go:384","content":"hello world","success":true}
+{"@timestamp":"2023-04-20T00:25:35+08:00","level":"print","content":"hello world","price":32.5,"stack":"olog/log_test.go:385&github.com/welllog/olog.TestPlainOutput"}
+{"@timestamp":"2023-04-20T00:25:35+08:00","level":"fatal","caller":"olog/log_test.go:387","content":"fatal exit"}
 ```
 plain输出如下：
 ![plain](plain.webp)
@@ -91,4 +91,20 @@ func (l *CustomLogger) Debug(a ...any) {
 
 ### 性能
 记录一条消息和3个字段(禁用caller输出,并发测试)：
-![bench](bench.webp)
+```
+goos: darwin
+goarch: arm64
+pkg: github.com/welllog/olog
+BenchmarkInfo
+BenchmarkInfo/std.logger
+BenchmarkInfo/std.logger-10         	 3740652	       284.4 ns/op	      48 B/op	       1 allocs/op
+BenchmarkInfo/olog.json
+BenchmarkInfo/olog.json-10          	14560014	        83.89 ns/op	      96 B/op	       1 allocs/op
+BenchmarkInfo/olog.plain
+BenchmarkInfo/olog.plain-10         	20607255	        58.84 ns/op	      96 B/op	       1 allocs/op
+BenchmarkInfo/olog.ctx.json
+BenchmarkInfo/olog.ctx.json-10      	 7297224	       150.4 ns/op	     376 B/op	       6 allocs/op
+BenchmarkInfo/olog.ctx.plain
+BenchmarkInfo/olog.ctx.plain-10     	 8775705	       134.7 ns/op	     376 B/op	       6 allocs/op
+PASS
+```

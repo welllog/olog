@@ -12,15 +12,26 @@ func TrimLineEnding(b []byte) []byte {
 	return b
 }
 
-func getCaller(callDepth int) (string, int) {
-	_, file, line, ok := runtime.Caller(callDepth)
+func getCaller(skip int) (string, int) {
+	_, file, line, ok := runtime.Caller(skip)
 	if !ok {
-		return "???", 0
+		return "", 0
 	}
-	return shortFile(file), line
+	return file, line
+}
+
+func getCallerFrames(skip, size int) *runtime.Frames {
+	pc := make([]uintptr, size)
+	n := runtime.Callers(skip+1, pc)
+
+	return runtime.CallersFrames(pc[:n])
 }
 
 func shortFile(file string) string {
+	if file == "" {
+		return "???"
+	}
+
 	var count int
 	idx := -1
 	for i := len(file) - 5; i >= 0; i-- {

@@ -5,8 +5,10 @@ type Level uint8
 
 // Define constants for each log level.
 const (
-	DEBUG Level = iota
+	TRACE Level = iota
+	DEBUG
 	INFO
+	NOTICE
 	WARN
 	ERROR
 	FATAL
@@ -14,20 +16,24 @@ const (
 
 // Define string representations of each log level.
 const (
-	tagDebug = "debug"
-	tagInfo  = "info"
-	tagWarn  = "warn"
-	tagError = "error"
-	tagFatal = "fatal"
+	tagTrace  = "trace"
+	tagDebug  = "debug"
+	tagInfo   = "info"
+	tagNotice = "notice"
+	tagWarn   = "warn"
+	tagError  = "error"
+	tagFatal  = "fatal"
 )
 
 // Define a mapping from Level values to their corresponding string representations.
 var levelToStr = map[Level]string{
-	DEBUG: tagDebug,
-	INFO:  tagInfo,
-	WARN:  tagWarn,
-	ERROR: tagError,
-	FATAL: tagFatal,
+	TRACE:  tagTrace,
+	DEBUG:  tagDebug,
+	INFO:   tagInfo,
+	NOTICE: tagNotice,
+	WARN:   tagWarn,
+	ERROR:  tagError,
+	FATAL:  tagFatal,
 }
 
 // String returns the string representation of the Level value.
