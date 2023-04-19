@@ -23,12 +23,20 @@ func TestCtxPrintf(t *testing.T) {
 			lv:   WARN,
 		},
 		{
+			name: "Noticef",
+			lv:   NOTICE,
+		},
+		{
 			name: "Infof",
 			lv:   INFO,
 		},
 		{
 			name: "Debugf",
 			lv:   DEBUG,
+		},
+		{
+			name: "Tracef",
+			lv:   TRACE,
 		},
 	}
 
@@ -41,10 +49,14 @@ func TestCtxPrintf(t *testing.T) {
 			logger.Errorf("test %s", "printf")
 		case "Warnf":
 			logger.Warnf("test %s", "printf")
+		case "Noticef":
+			logger.Noticef("test %s", "printf")
 		case "Infof":
 			logger.Infof("test %s", "printf")
 		case "Debugf":
 			logger.Debugf("test %s", "printf")
+		case "Tracef":
+			logger.Tracef("test %s", "printf")
 		}
 	}
 
@@ -85,12 +97,20 @@ func TestCtxPrint(t *testing.T) {
 			lv:   WARN,
 		},
 		{
+			name: "Notice",
+			lv:   NOTICE,
+		},
+		{
 			name: "Info",
 			lv:   INFO,
 		},
 		{
 			name: "Debug",
 			lv:   DEBUG,
+		},
+		{
+			name: "Trace",
+			lv:   TRACE,
 		},
 	}
 
@@ -103,10 +123,14 @@ func TestCtxPrint(t *testing.T) {
 			logger.Error("test ", "print")
 		case "Warn":
 			logger.Warn("test ", "print")
+		case "Notice":
+			logger.Notice("test ", "print")
 		case "Info":
 			logger.Info("test ", "print")
 		case "Debug":
 			logger.Debug("test ", "print")
+		case "Trace":
+			logger.Trace("test ", "print")
 		}
 	}
 
@@ -147,12 +171,20 @@ func TestCtxPrintw(t *testing.T) {
 			lv:   WARN,
 		},
 		{
+			name: "Noticew",
+			lv:   NOTICE,
+		},
+		{
 			name: "Infow",
 			lv:   INFO,
 		},
 		{
 			name: "Debugw",
 			lv:   DEBUG,
+		},
+		{
+			name: "Tracew",
+			lv:   TRACE,
 		},
 	}
 
@@ -164,10 +196,14 @@ func TestCtxPrintw(t *testing.T) {
 			logger.Errorw("test", Field{Key: "age", Value: 18}, Field{Key: "addr", Value: "new york"})
 		case "Warnw":
 			logger.Warnw("test", Field{Key: "age", Value: 18}, Field{Key: "addr", Value: "new york"})
+		case "Noticew":
+			logger.Noticew("test", Field{Key: "age", Value: 18}, Field{Key: "addr", Value: "new york"})
 		case "Infow":
 			logger.Infow("test", Field{Key: "age", Value: 18}, Field{Key: "addr", Value: "new york"})
 		case "Debugw":
 			logger.Debugw("test", Field{Key: "age", Value: 18}, Field{Key: "addr", Value: "new york"})
+		case "Tracew":
+			logger.Tracew("test", Field{Key: "age", Value: 18}, Field{Key: "addr", Value: "new york"})
 		}
 	}
 
@@ -175,7 +211,7 @@ func TestCtxPrintw(t *testing.T) {
 		SetEncode(PLAIN)
 		logger := WithContext(GetLogger(), context.Background())
 		logging(logger, tt.name)
-		want := fmt.Sprintf("\t%s\t%s\t%s\t%s\t%s\t%s\n", tt.lv.String(), "test", "age", "18", "addr", "new york")
+		want := fmt.Sprintf("\t%s\t%s\t%s=%s\t%s=%s\n", tt.lv.String(), "test", "age", "18", "addr", "new york")
 		if buf.String() != want {
 			t.Errorf("%s() = %s, want = %s", tt.name, buf.String(), want)
 		}

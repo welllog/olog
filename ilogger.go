@@ -21,6 +21,11 @@ type Logger interface {
 	Warnf(format string, args ...any)
 	Warnw(msg string, fields ...Field)
 
+	// Notice writes a log message with the NOTICE log level.
+	Notice(args ...any)
+	Noticef(format string, args ...any)
+	Noticew(msg string, fields ...Field)
+
 	// Info writes a log message with the INFO log level.
 	Info(args ...any)
 	Infof(format string, args ...any)
@@ -30,6 +35,11 @@ type Logger interface {
 	Debug(args ...any)
 	Debugf(format string, args ...any)
 	Debugw(msg string, fields ...Field)
+
+	// Trace writes a log message with the TRACE log level.
+	Trace(args ...any)
+	Tracef(format string, args ...any)
+	Tracew(msg string, fields ...Field)
 
 	// IsEnabled returns whether the given log level is enabled or not.
 	IsEnabled(level Level) bool

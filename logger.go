@@ -23,7 +23,6 @@ func NewLogger(opts ...LoggerOption) Logger {
 // newLogger creates a new logger instance with default options that can be customized with the provided options
 func newLogger(opts ...LoggerOption) *logger {
 	l := logger{
-		level:        DEBUG,
 		enableCaller: true,
 		enableColor:  true,
 		timeFormat:   time.RFC3339,
@@ -125,6 +124,18 @@ func (l *logger) Warnw(msg string, fields ...Field) {
 	l.warnw(msg, fields...)
 }
 
+func (l *logger) Notice(a ...any) {
+	l.notice(a...)
+}
+
+func (l *logger) Noticef(format string, a ...any) {
+	l.noticef(format, a...)
+}
+
+func (l *logger) Noticew(msg string, fields ...Field) {
+	l.noticew(msg, fields...)
+}
+
 func (l *logger) Info(a ...any) {
 	l.info(a...)
 }
@@ -147,6 +158,18 @@ func (l *logger) Debugf(format string, a ...any) {
 
 func (l *logger) Debugw(msg string, fields ...Field) {
 	l.debugw(msg, fields...)
+}
+
+func (l *logger) Trace(a ...any) {
+	l.trace(a...)
+}
+
+func (l *logger) Tracef(format string, a ...any) {
+	l.tracef(format, a...)
+}
+
+func (l *logger) Tracew(msg string, fields ...Field) {
+	l.tracew(msg, fields...)
 }
 
 func (l *logger) IsEnabled(level Level) bool {
@@ -273,6 +296,41 @@ func (l *logger) warnw(msg string, fields ...Field) {
 	}
 }
 
+func (l *logger) notice(a ...any) {
+	if l.IsEnabled(NOTICE) {
+		l.output(&logOption{
+			level:        NOTICE,
+			enableCaller: l.enableCaller,
+			msgType:      msgTypePrint,
+			msgArgs:      a,
+		})
+	}
+}
+
+func (l *logger) noticef(format string, a ...any) {
+	if l.IsEnabled(NOTICE) {
+		l.output(&logOption{
+			level:        NOTICE,
+			enableCaller: l.enableCaller,
+			msgType:      msgTypePrintf,
+			msgArgs:      a,
+			msgOrFormat:  format,
+		})
+	}
+}
+
+func (l *logger) noticew(msg string, fields ...Field) {
+	if l.IsEnabled(NOTICE) {
+		l.output(&logOption{
+			level:        NOTICE,
+			enableCaller: l.enableCaller,
+			msgType:      msgTypePrintMsg,
+			msgOrFormat:  msg,
+			fields:       fields,
+		})
+	}
+}
+
 func (l *logger) info(a ...any) {
 	if l.IsEnabled(INFO) {
 		l.output(&logOption{
@@ -335,6 +393,41 @@ func (l *logger) debugw(msg string, fields ...Field) {
 	if l.IsEnabled(DEBUG) {
 		l.output(&logOption{
 			level:        DEBUG,
+			enableCaller: l.enableCaller,
+			msgType:      msgTypePrintMsg,
+			msgOrFormat:  msg,
+			fields:       fields,
+		})
+	}
+}
+
+func (l *logger) trace(a ...any) {
+	if l.IsEnabled(TRACE) {
+		l.output(&logOption{
+			level:        TRACE,
+			enableCaller: l.enableCaller,
+			msgType:      msgTypePrint,
+			msgArgs:      a,
+		})
+	}
+}
+
+func (l *logger) tracef(format string, a ...any) {
+	if l.IsEnabled(TRACE) {
+		l.output(&logOption{
+			level:        TRACE,
+			enableCaller: l.enableCaller,
+			msgType:      msgTypePrintf,
+			msgArgs:      a,
+			msgOrFormat:  format,
+		})
+	}
+}
+
+func (l *logger) tracew(msg string, fields ...Field) {
+	if l.IsEnabled(TRACE) {
+		l.output(&logOption{
+			level:        TRACE,
 			enableCaller: l.enableCaller,
 			msgType:      msgTypePrintMsg,
 			msgOrFormat:  msg,

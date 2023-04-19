@@ -126,6 +126,21 @@ func Warnw(msg string, fields ...Field) {
 	getDefLogger().warnw(msg, fields...)
 }
 
+// Notice logs a message at notice level.
+func Notice(a ...any) {
+	getDefLogger().notice(a...)
+}
+
+// Noticef logs a formatted message at notice level.
+func Noticef(format string, a ...any) {
+	getDefLogger().noticef(format, a...)
+}
+
+// Noticew logs a message with extra fields at notice level.
+func Noticew(msg string, fields ...Field) {
+	getDefLogger().noticew(msg, fields...)
+}
+
 // Info logs a message at info level.
 func Info(a ...any) {
 	getDefLogger().info(a...)
@@ -154,4 +169,19 @@ func Debugf(format string, a ...any) {
 // Debugw logs a message with extra fields at debug level.
 func Debugw(msg string, fields ...Field) {
 	getDefLogger().debugw(msg, fields...)
+}
+
+// Trace logs a message at trace level.
+func Trace(a ...any) {
+	getDefLogger().trace(a...)
+}
+
+// Tracef logs a formatted message at trace level.
+func Tracef(format string, a ...any) {
+	getDefLogger().tracef(format, a...)
+}
+
+// Tracew logs a message with extra fields at trace level.
+func Tracew(msg string, fields ...Field) {
+	getDefLogger().tracew(msg, fields...)
 }
