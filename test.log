@@ -1,6 +1,6 @@
-	[37mdebug[0m	olog/log_test.go:383	t1t2
-	[32minfo[0m	olog/log_test.go:385	t3t4
-	[33mwarn[0m	olog/log_test.go:387	t5	name=bob	age=18
-	debug	olog/log_test.go:383	t1t2
-	info	olog/log_test.go:385	t3t4
-	warn	olog/log_test.go:387	t5	name=bob	age=18
+	[37mdebug[0m	olog/log_test.go:368	t1t2
+	[32minfo[0m	olog/log_test.go:370	t3t4
+	[33mwarn[0m	olog/log_test.go:372	t5	name=bob	age=18
+	debug	olog/log_test.go:368	t1t2
+	info	olog/log_test.go:370	t3t4
+	warn	olog/log_test.go:372	t5	name=bob	age=18

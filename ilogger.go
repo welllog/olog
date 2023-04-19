@@ -62,12 +62,12 @@ type logOption struct {
 	level        Level   // level is the severity level of the log message.
 	enableCaller bool    // enableCaller indicates whether to include caller information in the log message.
 	enableColor  bool    // enableColor indicates whether to enable colorized output for the levelTag on plain encoding.
+	enableStack  bool    // enableStack indicates whether to include stack trace information in the log message.
+	stackSize    uint8   // stackSize is the maximum number of stack frames to include in the log message.
 	msgType      msgType // msgType is the type of the log message.
 	msgArgs      []any   // msgArgs is a slice of arguments to the log message.
 	msgOrFormat  string  // msgOrFormat is the format string of the log message.
 	callerSkip   int     // callerSkip is the number of stack frames to skip to find the caller information.
-	file         string  // file is the file name of the log message.
-	line         int     // line is the line number of the log message.
 
 	// tag is the string representation of the severity level
 	// The default debug, info, warn, error, and fatal correspond to DEBUG, INFO, WARN, ERROR, and FATAL log levels respectively
@@ -78,7 +78,10 @@ type logOption struct {
 }
 
 // defCallerSkip is the default number of stack frames to skip to find the caller information.
-const defCallerSkip = 4
+const defCallerSkip = 5
+
+// defStackSize is the default maximum number of stack frames to include in the log message.
+const defStackSize = 5
 
 type msgType int8
 
@@ -146,6 +149,17 @@ func WithPrintMsg(msg string) LogOption {
 		}
 		o.msgType = msgTypePrintMsg
 		o.msgOrFormat = msg
+	}
+}
+
+// WithCallStack returns a LogOption that sets the number of stack frames to skip when logging caller information.
+func WithCallStack(stackSize uint8) LogOption {
+	return func(o *logOption) {
+		o.enableStack = true
+		if stackSize == 0 {
+			stackSize = defStackSize
+		}
+		o.stackSize = stackSize
 	}
 }
 

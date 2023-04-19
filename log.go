@@ -59,11 +59,7 @@ func SetTimeFormat(format string) {
 // SetEncode sets the log encoding type for the default logger.
 func SetEncode(e EncodeType) {
 	l := getDefLogger().clone()
-	if e == PLAIN {
-		l.encode = plainEncode
-	} else {
-		l.encode = jsonEncode
-	}
+	l.encodeType = e
 	setDefLogger(l)
 }
 

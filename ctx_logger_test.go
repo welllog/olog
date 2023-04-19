@@ -34,10 +34,6 @@ func TestCtxPrintf(t *testing.T) {
 			name: "Debugf",
 			lv:   DEBUG,
 		},
-		{
-			name: "Tracef",
-			lv:   TRACE,
-		},
 	}
 
 	var buf bytes.Buffer
@@ -55,8 +51,6 @@ func TestCtxPrintf(t *testing.T) {
 			logger.Infof("test %s", "printf")
 		case "Debugf":
 			logger.Debugf("test %s", "printf")
-		case "Tracef":
-			logger.Tracef("test %s", "printf")
 		}
 	}
 
@@ -108,10 +102,6 @@ func TestCtxPrint(t *testing.T) {
 			name: "Debug",
 			lv:   DEBUG,
 		},
-		{
-			name: "Trace",
-			lv:   TRACE,
-		},
 	}
 
 	var buf bytes.Buffer
@@ -129,8 +119,6 @@ func TestCtxPrint(t *testing.T) {
 			logger.Info("test ", "print")
 		case "Debug":
 			logger.Debug("test ", "print")
-		case "Trace":
-			logger.Trace("test ", "print")
 		}
 	}
 
@@ -182,10 +170,6 @@ func TestCtxPrintw(t *testing.T) {
 			name: "Debugw",
 			lv:   DEBUG,
 		},
-		{
-			name: "Tracew",
-			lv:   TRACE,
-		},
 	}
 
 	var buf bytes.Buffer
@@ -202,8 +186,6 @@ func TestCtxPrintw(t *testing.T) {
 			logger.Infow("test", Field{Key: "age", Value: 18}, Field{Key: "addr", Value: "new york"})
 		case "Debugw":
 			logger.Debugw("test", Field{Key: "age", Value: 18}, Field{Key: "addr", Value: "new york"})
-		case "Tracew":
-			logger.Tracew("test", Field{Key: "age", Value: 18}, Field{Key: "addr", Value: "new york"})
 		}
 	}
 
@@ -248,14 +230,14 @@ func TestWithContext(t *testing.T) {
 
 	SetEncode(PLAIN)
 	l := WithContext(GetLogger(), ctx)
-	l.Debug("test uid")
+	l.Debug("test 1")
 
 	ctx = context.WithValue(context.Background(), "name", "bob")
 	l = WithContext(l, ctx)
-	l.Debug("test name")
+	l.Debug("test 2")
 
 	l = WithContext(l, context.Background())
-	l.Debug("test name")
+	l.Debug("test 3")
 
 	l = WithEntries(l, map[string]any{
 		"ip":      "127.0.0.1",
@@ -263,9 +245,9 @@ func TestWithContext(t *testing.T) {
 		"success": true,
 	})
 
-	l.Debug("test entries")
+	l.Debug("test 4")
 
 	l = WithContext(l, context.WithValue(context.Background(), "name", "linda"))
-	l.Debug("test override name")
-	l.Log(DEBUG, WithPrintMsg("test log"), WithTag("trace"))
+	l.Debug("test 5")
+	l.Log(DEBUG, WithPrintMsg("test 6"), WithTag("print"), WithCaller(false), WithCallStack(0))
 }

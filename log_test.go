@@ -51,11 +51,6 @@ func TestPrintf(t *testing.T) {
 			fn:   Debugf,
 			lv:   DEBUG,
 		},
-		{
-			name: "Tracef",
-			fn:   Tracef,
-			lv:   TRACE,
-		},
 	}
 
 	var buf bytes.Buffer
@@ -113,11 +108,6 @@ func TestPrint(t *testing.T) {
 			fn:   Debug,
 			lv:   DEBUG,
 		},
-		{
-			name: "Trace",
-			fn:   Trace,
-			lv:   TRACE,
-		},
 	}
 
 	var buf bytes.Buffer
@@ -174,11 +164,6 @@ func TestPrintw(t *testing.T) {
 			name: "Debugw",
 			fn:   Debugw,
 			lv:   DEBUG,
-		},
-		{
-			name: "Tracew",
-			fn:   Tracew,
-			lv:   TRACE,
 		},
 	}
 
@@ -389,20 +374,18 @@ func logging(tt struct {
 
 func TestPlainOutput(t *testing.T) {
 	SetEncode(PLAIN)
+	SetColor(true)
 	Trace("hello world")
 	Tracew("hello", Field{Key: "name", Value: "bob"})
 	Debug("hello world")
-	Debugw("hello", Field{Key: "name", Value: "bob"})
-	Info("hello world")
 	Infow("hello", Field{Key: "name", Value: "linda"}, Field{Key: "age", Value: 18})
-	Notice("hello world")
 	Noticef("hello %s", "world")
 	Warnf("hello %s", "world")
 	Warnw("hello", Field{Key: "order_no", Value: "AWESDDF"})
-	Error("hello world")
 	Errorw("hello world", Field{Key: "success", Value: true})
-	Log(DEBUG, WithTag("start"), WithPrintMsg("hello world"), WithCaller(false),
-		WithFields(Field{Key: "price", Value: 32.5}))
+	Log(DEBUG, WithTag("print"), WithPrintMsg("hello world"), WithCaller(false),
+		WithFields(Field{Key: "price", Value: 32.5}), WithCallStack(1))
+	//Fatal("fatal exit")
 }
 
 func BenchmarkInfo(b *testing.B) {

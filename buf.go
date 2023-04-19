@@ -52,6 +52,14 @@ func (b *Buffer) Bytes() []byte {
 	return b.buf
 }
 
+func (b *Buffer) Back(n int) {
+	l := len(b.buf)
+	if l < n {
+		n = l
+	}
+	b.buf = b.buf[:l-n]
+}
+
 func (b *Buffer) Reset() {
 	b.buf = b.buf[:0]
 }

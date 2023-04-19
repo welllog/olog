@@ -1,6 +1,7 @@
 package olog
 
 import (
+	"runtime"
 	"time"
 )
 
@@ -25,14 +26,37 @@ func jsonEncode(o *logOption, w Writer) {
 	buf.WriteTime(time.Now(), o.timeFormat)
 	_, _ = buf.WriteString(`","level":"`)
 	_, _ = buf.WriteString(o.tag)
-	if o.enableCaller {
-		_, _ = buf.WriteString(`","caller":"`)
-		_, _ = buf.WriteString(o.file)
-		_ = buf.WriteByte(':')
-		buf.WriteInt64(int64(o.line))
-	}
-	_, _ = buf.WriteString(`","content":`)
 
+	var (
+		get    bool
+		more   bool
+		frame  runtime.Frame
+		frames *runtime.Frames
+	)
+
+	if o.enableStack {
+		frames = getCallerFrames(o.callerSkip, int(o.stackSize))
+		frame, more = frames.Next()
+		get = true
+	}
+
+	if o.enableCaller {
+		var (
+			file string
+			line int
+		)
+		if get {
+			file, line = frame.File, frame.Line
+		} else {
+			file, line = getCaller(o.callerSkip)
+		}
+		_, _ = buf.WriteString(`","caller":"`)
+		_, _ = buf.WriteString(shortFile(file))
+		_, _ = buf.WriteString(`:`)
+		buf.WriteInt64(int64(line))
+	}
+
+	_, _ = buf.WriteString(`","content":`)
 	switch o.msgType {
 	case msgTypePrint:
 		buf.WriteQuoteSprint(o.msgArgs...)
@@ -49,6 +73,27 @@ func jsonEncode(o *logOption, w Writer) {
 		_, _ = buf.WriteString(field.Key)
 		_, _ = buf.WriteString(`":`)
 		buf.WriteAny(field.Value, true)
+	}
+
+	if o.enableStack {
+		_, _ = buf.WriteString(`,"stack":"`)
+		if frame.File != "" {
+			for {
+				_, _ = buf.WriteString(shortFile(frame.File))
+				_ = buf.WriteByte(':')
+				buf.WriteInt64(int64(frame.Line))
+				_ = buf.WriteByte('&')
+				_, _ = buf.WriteString(frame.Function)
+				_ = buf.WriteByte(' ')
+
+				if !more {
+					break
+				}
+				frame, more = frames.Next()
+			}
+			buf.Back(1)
+		}
+		_ = buf.WriteByte('"')
 	}
 
 	// Write the closing curly brace and newline character to the buffer.
@@ -74,10 +119,35 @@ func plainEncode(o *logOption, w Writer) {
 		_, _ = buf.WriteString(o.tag)
 	}
 	_ = buf.WriteByte(sep)
+
+	var (
+		get    bool
+		more   bool
+		frame  runtime.Frame
+		frames *runtime.Frames
+	)
+
+	if o.enableStack {
+		frames = getCallerFrames(o.callerSkip, int(o.stackSize))
+		frame, more = frames.Next()
+		get = true
+	}
+
 	if o.enableCaller {
-		_, _ = buf.WriteString(o.file)
+		var (
+			file string
+			line int
+		)
+		if get {
+			file, line = frame.File, frame.Line
+		} else {
+			file, line = getCaller(o.callerSkip)
+		}
+		file = shortFile(file)
+
+		_, _ = buf.WriteString(file)
 		_ = buf.WriteByte(':')
-		buf.WriteInt64(int64(o.line))
+		buf.WriteInt64(int64(line))
 		_ = buf.WriteByte(sep)
 	}
 
@@ -96,6 +166,27 @@ func plainEncode(o *logOption, w Writer) {
 		_, _ = buf.WriteString(field.Key)
 		_ = buf.WriteByte('=')
 		buf.WriteAny(field.Value, false)
+	}
+
+	if o.enableStack {
+		_ = buf.WriteByte(sep)
+		_, _ = buf.WriteString("stack=")
+		if frame.File != "" {
+			for {
+				_, _ = buf.WriteString(shortFile(frame.File))
+				_ = buf.WriteByte(':')
+				buf.WriteInt64(int64(frame.Line))
+				_ = buf.WriteByte('&')
+				_, _ = buf.WriteString(frame.Function)
+				_ = buf.WriteByte(' ')
+
+				if !more {
+					break
+				}
+				frame, more = frames.Next()
+			}
+			buf.Back(1)
+		}
 	}
 
 	// Write the newline character to the buffer.
