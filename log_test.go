@@ -388,7 +388,7 @@ func TestPlainOutput(t *testing.T) {
 	//Fatal("fatal exit")
 }
 
-func BenchmarkInfo(b *testing.B) {
+func BenchmarkInfow(b *testing.B) {
 	b.Run("std.logger", func(b *testing.B) {
 		logger := log.New(discard{}, "", log.Ldate|log.Ltime|log.Lmsgprefix)
 

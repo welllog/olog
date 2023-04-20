@@ -27,6 +27,11 @@ func jsonEncode(o *logOption, w Writer) {
 	_, _ = buf.WriteString(`","level":"`)
 	_, _ = buf.WriteString(o.tag)
 
+	if o.appName != "" {
+		_, _ = buf.WriteString(`","app":"`)
+		_, _ = buf.WriteString(o.appName)
+	}
+
 	var (
 		get    bool
 		more   bool
@@ -80,11 +85,11 @@ func jsonEncode(o *logOption, w Writer) {
 		if frame.File != "" {
 			for {
 				_, _ = buf.WriteString(`\n`)
-				_, _ = buf.WriteString(shortFile(frame.File))
+				_, _ = buf.WriteString(frame.Function)
+				_, _ = buf.WriteString(`\n\t`)
+				_, _ = buf.WriteString(frame.File)
 				_ = buf.WriteByte(':')
 				buf.WriteInt64(int64(frame.Line))
-				_ = buf.WriteByte('&')
-				_, _ = buf.WriteString(frame.Function)
 
 				if !more {
 					break
@@ -118,6 +123,11 @@ func plainEncode(o *logOption, w Writer) {
 		_, _ = buf.WriteString(o.tag)
 	}
 	_ = buf.WriteByte(sep)
+
+	if o.appName != "" {
+		_, _ = buf.WriteString(o.appName)
+		_ = buf.WriteByte(sep)
+	}
 
 	var (
 		get    bool
@@ -173,11 +183,11 @@ func plainEncode(o *logOption, w Writer) {
 		if frame.File != "" {
 			for {
 				_ = buf.WriteByte('\n')
-				_, _ = buf.WriteString(shortFile(frame.File))
+				_, _ = buf.WriteString(frame.Function)
+				_, _ = buf.WriteString("\n\t")
+				_, _ = buf.WriteString(frame.File)
 				_ = buf.WriteByte(':')
 				buf.WriteInt64(int64(frame.Line))
-				_ = buf.WriteByte('&')
-				_, _ = buf.WriteString(frame.Function)
 
 				if !more {
 					break

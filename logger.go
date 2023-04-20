@@ -7,6 +7,7 @@ import (
 
 // logger represents a logger instance with configurable options
 type logger struct {
+	appName      string     // the name of the application
 	level        Level      // the minimum level of logging to output
 	enableCaller bool       // flag indicating whether to log the caller information
 	enableColor  bool       // flag indicating whether to use colorized output for levelTag on plain encoding
@@ -37,6 +38,13 @@ func newLogger(opts ...LoggerOption) *logger {
 
 // LoggerOption is a functional option type for configuring a logger instance
 type LoggerOption func(*logger)
+
+// WithLoggerAppName sets the name of the application
+func WithLoggerAppName(name string) LoggerOption {
+	return func(l *logger) {
+		l.appName = name
+	}
+}
 
 // WithLoggerLevel sets the minimum logging level for the logger instance
 func WithLoggerLevel(level Level) LoggerOption {
@@ -509,6 +517,7 @@ func (l *logger) output(o *logOption) {
 	}
 
 	o.fields = l.filterFields(o.fields)
+	o.appName = l.appName
 	o.enableColor = l.enableColor
 	o.timeFormat = l.timeFormat
 	if l.encodeType == PLAIN {
@@ -542,6 +551,7 @@ func (l *logger) filterFields(fields []Field) []Field {
 
 func (l *logger) clone() *logger {
 	return &logger{
+		appName:      l.appName,
 		level:        l.level,
 		enableCaller: l.enableCaller,
 		enableColor:  l.enableColor,

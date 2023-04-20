@@ -76,6 +76,7 @@ type LogOption struct {
 
 // logOption is a struct that represents options to use when logging a message.
 type logOption struct {
+	appName      string  // appName is the name of the application that created the log message.
 	level        Level   // level is the severity level of the log message.
 	enableCaller bool    // enableCaller indicates whether to include caller information in the log message.
 	enableColor  bool    // enableColor indicates whether to enable colorized output for the levelTag on plain encoding.

@@ -29,36 +29,43 @@
 ```
 json输出如下：
 ```json
-{"@timestamp":"2023-04-20T16:13:00+08:00","level":"trace","caller":"olog/log_test.go:377","content":"hello world","stack":"\nolog/log_test.go:377&github.com/welllog/olog.TestPlainOutput\ntesting/testing.go:1576&testing.tRunner\nruntime/asm_amd64.s:1598&runtime.goexit"}
-{"@timestamp":"2023-04-20T16:13:00+08:00","level":"trace","caller":"olog/log_test.go:378","content":"hello","name":"bob","stack":"\nolog/log_test.go:378&github.com/welllog/olog.TestPlainOutput\ntesting/testing.go:1576&testing.tRunner\nruntime/asm_amd64.s:1598&runtime.goexit"}
-{"@timestamp":"2023-04-20T16:13:00+08:00","level":"debug","caller":"olog/log_test.go:379","content":"hello world"}
-{"@timestamp":"2023-04-20T16:13:00+08:00","level":"info","caller":"olog/log_test.go:380","content":"hello","name":"linda","age":18}
-{"@timestamp":"2023-04-20T16:13:00+08:00","level":"notice","caller":"olog/log_test.go:381","content":"hello world"}
-{"@timestamp":"2023-04-20T16:13:00+08:00","level":"warn","caller":"olog/log_test.go:382","content":"hello world"}
-{"@timestamp":"2023-04-20T16:13:00+08:00","level":"warn","caller":"olog/log_test.go:383","content":"hello","order_no":"AWESDDF"}
-{"@timestamp":"2023-04-20T16:13:00+08:00","level":"error","caller":"olog/log_test.go:384","content":"hello world","success":true}
-{"@timestamp":"2023-04-20T16:13:00+08:00","level":"print","content":"hello world","price":32.5,"stack":"\nolog/log_test.go:385&github.com/welllog/olog.TestPlainOutput"}
-{"@timestamp":"2023-04-20T16:13:00+08:00","level":"fatal","caller":"olog/log_test.go:388","content":"fatal exit"}
+{"@timestamp":"2023-04-20T18:33:42+08:00","level":"trace","caller":"olog/log_test.go:377","content":"hello world","stack":"\ngithub.com/welllog/olog.TestPlainOutput\n\t/olog/log_test.go:377\ntesting.tRunner\n\t/usr/local/opt/go/libexec/src/testing/testing.go:1576\nruntime.goexit\n\t/usr/local/opt/go/libexec/src/runtime/asm_amd64.s:1598"}
+{"@timestamp":"2023-04-20T18:33:42+08:00","level":"trace","caller":"olog/log_test.go:378","content":"hello","name":"bob","stack":"\ngithub.com/welllog/olog.TestPlainOutput\n\t/olog/log_test.go:378\ntesting.tRunner\n\t/usr/local/opt/go/libexec/src/testing/testing.go:1576\nruntime.goexit\n\t/usr/local/opt/go/libexec/src/runtime/asm_amd64.s:1598"}
+{"@timestamp":"2023-04-20T18:33:42+08:00","level":"debug","caller":"olog/log_test.go:379","content":"hello world"}
+{"@timestamp":"2023-04-20T18:33:42+08:00","level":"info","caller":"olog/log_test.go:380","content":"hello","name":"linda","age":18}
+{"@timestamp":"2023-04-20T18:33:42+08:00","level":"notice","caller":"olog/log_test.go:381","content":"hello world"}
+{"@timestamp":"2023-04-20T18:33:42+08:00","level":"warn","caller":"olog/log_test.go:382","content":"hello world"}
+{"@timestamp":"2023-04-20T18:33:42+08:00","level":"warn","caller":"olog/log_test.go:383","content":"hello","order_no":"AWESDDF"}
+{"@timestamp":"2023-04-20T18:33:42+08:00","level":"error","caller":"olog/log_test.go:384","content":"hello world","success":true}
+{"@timestamp":"2023-04-20T18:33:42+08:00","level":"print","content":"hello world","price":32.5,"stack":"\ngithub.com/welllog/olog.TestPlainOutput\n\t/olog/log_test.go:385"}
+{"@timestamp":"2023-04-20T18:33:42+08:00","level":"fatal","caller":"olog/log_test.go:388","content":"fatal exit"}
 ```
 plain输出如下：
 ```
-2023-04-20T16:09:26+08:00	trace	olog/log_test.go:377	hello world	stack=
-olog/log_test.go:377&github.com/welllog/olog.TestPlainOutput
-testing/testing.go:1576&testing.tRunner
-runtime/asm_amd64.s:1598&runtime.goexit
-2023-04-20T16:09:26+08:00	trace	olog/log_test.go:378	hello	name=bob	stack=
-olog/log_test.go:378&github.com/welllog/olog.TestPlainOutput
-testing/testing.go:1576&testing.tRunner
-runtime/asm_amd64.s:1598&runtime.goexit
-2023-04-20T16:09:26+08:00	debug	olog/log_test.go:379	hello world
-2023-04-20T16:09:26+08:00	info	olog/log_test.go:380	hello	name=linda	age=18
-2023-04-20T16:09:26+08:00	notice	olog/log_test.go:381	hello world
-2023-04-20T16:09:26+08:00	warn	olog/log_test.go:382	hello world
-2023-04-20T16:09:26+08:00	warn	olog/log_test.go:383	hello	order_no=AWESDDF
-2023-04-20T16:09:26+08:00	error	olog/log_test.go:384	hello world	success=true
-2023-04-20T16:09:26+08:00	print	hello world	price=32.5	stack=
-olog/log_test.go:385&github.com/welllog/olog.TestPlainOutput
-2023-04-20T16:09:26+08:00	fatal	olog/log_test.go:388	fatal exit
+2023-04-20T18:32:09+08:00	trace	olog/log_test.go:377	hello world	stack=
+github.com/welllog/olog.TestPlainOutput
+	/olog/log_test.go:377
+testing.tRunner
+	/usr/local/opt/go/libexec/src/testing/testing.go:1576
+runtime.goexit
+	/usr/local/opt/go/libexec/src/runtime/asm_amd64.s:1598
+2023-04-20T18:32:09+08:00	trace	olog/log_test.go:378	hello	name=bob	stack=
+github.com/welllog/olog.TestPlainOutput
+	/olog/log_test.go:378
+testing.tRunner
+	/usr/local/opt/go/libexec/src/testing/testing.go:1576
+runtime.goexit
+	/usr/local/opt/go/libexec/src/runtime/asm_amd64.s:1598
+2023-04-20T18:32:09+08:00	debug	olog/log_test.go:379	hello world
+2023-04-20T18:32:09+08:00	info	olog/log_test.go:380	hello	name=linda	age=18
+2023-04-20T18:32:09+08:00	notice	olog/log_test.go:381	hello world
+2023-04-20T18:32:09+08:00	warn	olog/log_test.go:382	hello world
+2023-04-20T18:32:09+08:00	warn	olog/log_test.go:383	hello	order_no=AWESDDF
+2023-04-20T18:32:09+08:00	error	olog/log_test.go:384	hello world	success=true
+2023-04-20T18:32:09+08:00	print	hello world	price=32.5	stack=
+github.com/welllog/olog.TestPlainOutput
+	/olog/log_test.go:385
+2023-04-20T18:32:09+08:00	fatal	olog/log_test.go:388	fatal exit
 ```
 
 ### contextLogger使用
@@ -113,18 +120,19 @@ func (l *CustomLogger) Debug(a ...any) {
 记录一条消息和3个字段(禁用caller输出,并发测试)：
 ```
 goos: darwin
-goarch: arm64
+goarch: amd64
 pkg: github.com/welllog/olog
-BenchmarkInfo
-BenchmarkInfo/std.logger
-BenchmarkInfo/std.logger-10         	 3740652	       284.4 ns/op	      48 B/op	       1 allocs/op
-BenchmarkInfo/olog.json
-BenchmarkInfo/olog.json-10          	14560014	        83.89 ns/op	      96 B/op	       1 allocs/op
-BenchmarkInfo/olog.plain
-BenchmarkInfo/olog.plain-10         	20607255	        58.84 ns/op	      96 B/op	       1 allocs/op
-BenchmarkInfo/olog.ctx.json
-BenchmarkInfo/olog.ctx.json-10      	 7297224	       150.4 ns/op	     376 B/op	       6 allocs/op
-BenchmarkInfo/olog.ctx.plain
-BenchmarkInfo/olog.ctx.plain-10     	 8775705	       134.7 ns/op	     376 B/op	       6 allocs/op
+cpu: Intel(R) Core(TM) i5-5257U CPU @ 2.70GHz
+BenchmarkInfow
+BenchmarkInfow/std.logger
+BenchmarkInfow/std.logger-4         	 1000000	      1099 ns/op	      48 B/op	       1 allocs/op
+BenchmarkInfow/olog.json
+BenchmarkInfow/olog.json-4          	 1817704	       987.8 ns/op	      96 B/op	       1 allocs/op
+BenchmarkInfow/olog.plain
+BenchmarkInfow/olog.plain-4         	 1588846	       700.4 ns/op	      96 B/op	       1 allocs/op
+BenchmarkInfow/olog.ctx.json
+BenchmarkInfow/olog.ctx.json-4      	 1000000	      1035 ns/op	      96 B/op	       1 allocs/op
+BenchmarkInfow/olog.ctx.plain
+BenchmarkInfow/olog.ctx.plain-4     	 1499271	       913.8 ns/op	      96 B/op	       1 allocs/op
 PASS
 ```

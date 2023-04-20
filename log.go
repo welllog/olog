@@ -28,6 +28,13 @@ func GetLogger() Logger {
 	return getDefLogger()
 }
 
+// SetAppName sets the name of the application.
+func SetAppName(name string) {
+	l := getDefLogger().clone()
+	l.appName = name
+	setDefLogger(l)
+}
+
 // SetLevel sets the logging level for the default logger.
 func SetLevel(level Level) {
 	l := getDefLogger().clone()
