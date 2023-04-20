@@ -14,7 +14,7 @@ func TestLogCaller(t *testing.T) {
 	SetEncode(JSON)
 	SetLevel(TRACE)
 
-	Log(DEBUG, WithPrintMsg("hello"))
+	Logf(LogOption{Level: DEBUG}, "hello %s", "world")
 	Error("hello")
 	Errorf("hello %s", "world")
 	Errorw("hello")
@@ -44,7 +44,7 @@ func TestLoggerCaller(t *testing.T) {
 	buf := bytes.NewBuffer(nil)
 	logger := NewLogger(WithLoggerWriter(NewWriter(buf)))
 
-	logger.Log(DEBUG, WithPrintMsg("hello"))
+	logger.Logf(LogOption{Level: DEBUG}, "hello")
 	logger.Error("hello")
 	logger.Errorf("hello %s", "world")
 	logger.Errorw("hello")
@@ -76,7 +76,7 @@ func TestContextLoggerCaller(t *testing.T) {
 	logger = WithContext(logger, context.Background())
 	logger = WithContext(logger, context.WithValue(context.Background(), "name", "bob"))
 
-	logger.Log(DEBUG, WithPrintMsg("hello"))
+	logger.Logf(LogOption{Level: DEBUG}, "hello")
 	logger.Error("hello")
 	logger.Errorf("hello %s", "world")
 	logger.Errorw("hello")

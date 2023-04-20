@@ -330,9 +330,8 @@ func TestLog(t *testing.T) {
 	initTestLogger()
 	SetCaller(true)
 	SetEncode(PLAIN)
-	Log(INFO, WithPrintMsg("test log"), WithTag("stat"), WithFields(Field{Key: "name", Value: "bob"}))
-	Log(WARN, WithPrintMsg("test log"), WithTag("slow"), WithCaller(false))
-	Log(WARN, WithPrintMsg("test log"), WithTag("slow"), WithCallerSkip(1), WithCallerSkip(-1))
+	Logf(LogOption{Level: INFO, LevelTag: "stat", Fields: []Field{{Key: "name", Value: "bob"}}}, "test log")
+	Logf(LogOption{Level: WARN, EnableCaller: EnableClose, LevelTag: "slow"}, "test log")
 }
 
 type customLogger struct {
@@ -340,11 +339,11 @@ type customLogger struct {
 }
 
 func (l *customLogger) Slow(a ...any) {
-	l.Log(WARN, WithPrint(a...), WithTag("slow"), WithCallerSkipOne)
+	l.Log(LogOption{Level: WARN, LevelTag: "slow", CallerSkip: 1}, a...)
 }
 
 func (l *customLogger) Stat(a ...any) {
-	Log(INFO, WithPrint(a...), WithTag("stat"), WithCallerSkipOne)
+	l.Log(LogOption{Level: INFO, LevelTag: "stat", CallerSkip: 1}, a...)
 }
 
 func TestWrapLogger(t *testing.T) {
@@ -383,12 +382,13 @@ func TestPlainOutput(t *testing.T) {
 	Warnf("hello %s", "world")
 	Warnw("hello", Field{Key: "order_no", Value: "AWESDDF"})
 	Errorw("hello world", Field{Key: "success", Value: true})
-	Log(DEBUG, WithTag("print"), WithPrintMsg("hello world"), WithCaller(false),
-		WithFields(Field{Key: "price", Value: 32.5}), WithCallStack(1))
+	Logf(LogOption{Level: DEBUG, LevelTag: "print", EnableCaller: EnableClose, Fields: []Field{{Key: "price", Value: 32.5}},
+		EnableStack: EnableOpen, StackSize: 1},
+		"hello world")
 	//Fatal("fatal exit")
 }
 
-func BenchmarkInfo(b *testing.B) {
+func BenchmarkInfow(b *testing.B) {
 	b.Run("std.logger", func(b *testing.B) {
 		logger := log.New(discard{}, "", log.Ldate|log.Ltime|log.Lmsgprefix)
 

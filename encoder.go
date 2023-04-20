@@ -27,6 +27,11 @@ func jsonEncode(o *logOption, w Writer) {
 	_, _ = buf.WriteString(`","level":"`)
 	_, _ = buf.WriteString(o.tag)
 
+	if o.appName != "" {
+		_, _ = buf.WriteString(`","app":"`)
+		_, _ = buf.WriteString(o.appName)
+	}
+
 	var (
 		get    bool
 		more   bool
@@ -35,7 +40,7 @@ func jsonEncode(o *logOption, w Writer) {
 	)
 
 	if o.enableStack {
-		frames = getCallerFrames(o.callerSkip, int(o.stackSize))
+		frames = getCallerFrames(o.callerSkip, o.stackSize)
 		frame, more = frames.Next()
 		get = true
 	}
@@ -79,19 +84,18 @@ func jsonEncode(o *logOption, w Writer) {
 		_, _ = buf.WriteString(`,"stack":"`)
 		if frame.File != "" {
 			for {
-				_, _ = buf.WriteString(shortFile(frame.File))
+				_, _ = buf.WriteString(`\n`)
+				_, _ = buf.WriteString(frame.Function)
+				_, _ = buf.WriteString(`\n\t`)
+				_, _ = buf.WriteString(frame.File)
 				_ = buf.WriteByte(':')
 				buf.WriteInt64(int64(frame.Line))
-				_ = buf.WriteByte('&')
-				_, _ = buf.WriteString(frame.Function)
-				_ = buf.WriteByte(' ')
 
 				if !more {
 					break
 				}
 				frame, more = frames.Next()
 			}
-			buf.Back(1)
 		}
 		_ = buf.WriteByte('"')
 	}
@@ -120,6 +124,11 @@ func plainEncode(o *logOption, w Writer) {
 	}
 	_ = buf.WriteByte(sep)
 
+	if o.appName != "" {
+		_, _ = buf.WriteString(o.appName)
+		_ = buf.WriteByte(sep)
+	}
+
 	var (
 		get    bool
 		more   bool
@@ -128,7 +137,7 @@ func plainEncode(o *logOption, w Writer) {
 	)
 
 	if o.enableStack {
-		frames = getCallerFrames(o.callerSkip, int(o.stackSize))
+		frames = getCallerFrames(o.callerSkip, o.stackSize)
 		frame, more = frames.Next()
 		get = true
 	}
@@ -173,19 +182,18 @@ func plainEncode(o *logOption, w Writer) {
 		_, _ = buf.WriteString("stack=")
 		if frame.File != "" {
 			for {
-				_, _ = buf.WriteString(shortFile(frame.File))
+				_ = buf.WriteByte('\n')
+				_, _ = buf.WriteString(frame.Function)
+				_, _ = buf.WriteString("\n\t")
+				_, _ = buf.WriteString(frame.File)
 				_ = buf.WriteByte(':')
 				buf.WriteInt64(int64(frame.Line))
-				_ = buf.WriteByte('&')
-				_, _ = buf.WriteString(frame.Function)
-				_ = buf.WriteByte(' ')
 
 				if !more {
 					break
 				}
 				frame, more = frames.Next()
 			}
-			buf.Back(1)
 		}
 	}
 

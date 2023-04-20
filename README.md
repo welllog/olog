@@ -21,25 +21,52 @@
     Warnf("hello %s", "world")
     Warnw("hello", Field{Key: "order_no", Value: "AWESDDF"})
     Errorw("hello world", Field{Key: "success", Value: true})
-    Log(DEBUG, WithTag("print"), WithPrintMsg("hello world"), WithCaller(false),
-        WithFields(Field{Key: "price", Value: 32.5}), WithCallStack(1))
+    Logf(LogOption{Level: DEBUG, LevelTag: "print", EnableCaller: EnableClose, 
+		Fields: []Field{{Key: "price", Value: 32.5}},
+        EnableStack: EnableOpen, StackSize: 1},
+        "hello world")
     Fatal("fatal exit")
 ```
 The json output is as follows:
 ```json
-{"@timestamp":"2023-04-20T00:25:35+08:00","level":"trace","caller":"olog/log_test.go:377","content":"hello world","stack":"olog/log_test.go:377&github.com/welllog/olog.TestPlainOutput testing/testing.go:1576&testing.tRunner runtime/asm_arm64.s:1172&runtime.goexit"}
-{"@timestamp":"2023-04-20T00:25:35+08:00","level":"trace","caller":"olog/log_test.go:378","content":"hello","name":"bob","stack":"olog/log_test.go:378&github.com/welllog/olog.TestPlainOutput testing/testing.go:1576&testing.tRunner runtime/asm_arm64.s:1172&runtime.goexit"}
-{"@timestamp":"2023-04-20T00:25:35+08:00","level":"debug","caller":"olog/log_test.go:379","content":"hello world"}
-{"@timestamp":"2023-04-20T00:25:35+08:00","level":"info","caller":"olog/log_test.go:380","content":"hello","name":"linda","age":18}
-{"@timestamp":"2023-04-20T00:25:35+08:00","level":"notice","caller":"olog/log_test.go:381","content":"hello world"}
-{"@timestamp":"2023-04-20T00:25:35+08:00","level":"warn","caller":"olog/log_test.go:382","content":"hello world"}
-{"@timestamp":"2023-04-20T00:25:35+08:00","level":"warn","caller":"olog/log_test.go:383","content":"hello","order_no":"AWESDDF"}
-{"@timestamp":"2023-04-20T00:25:35+08:00","level":"error","caller":"olog/log_test.go:384","content":"hello world","success":true}
-{"@timestamp":"2023-04-20T00:25:35+08:00","level":"print","content":"hello world","price":32.5,"stack":"olog/log_test.go:385&github.com/welllog/olog.TestPlainOutput"}
-{"@timestamp":"2023-04-20T00:25:35+08:00","level":"fatal","caller":"olog/log_test.go:387","content":"fatal exit"}
+{"@timestamp":"2023-04-20T18:33:42+08:00","level":"trace","caller":"olog/log_test.go:377","content":"hello world","stack":"\ngithub.com/welllog/olog.TestPlainOutput\n\t/olog/log_test.go:377\ntesting.tRunner\n\t/usr/local/opt/go/libexec/src/testing/testing.go:1576\nruntime.goexit\n\t/usr/local/opt/go/libexec/src/runtime/asm_amd64.s:1598"}
+{"@timestamp":"2023-04-20T18:33:42+08:00","level":"trace","caller":"olog/log_test.go:378","content":"hello","name":"bob","stack":"\ngithub.com/welllog/olog.TestPlainOutput\n\t/olog/log_test.go:378\ntesting.tRunner\n\t/usr/local/opt/go/libexec/src/testing/testing.go:1576\nruntime.goexit\n\t/usr/local/opt/go/libexec/src/runtime/asm_amd64.s:1598"}
+{"@timestamp":"2023-04-20T18:33:42+08:00","level":"debug","caller":"olog/log_test.go:379","content":"hello world"}
+{"@timestamp":"2023-04-20T18:33:42+08:00","level":"info","caller":"olog/log_test.go:380","content":"hello","name":"linda","age":18}
+{"@timestamp":"2023-04-20T18:33:42+08:00","level":"notice","caller":"olog/log_test.go:381","content":"hello world"}
+{"@timestamp":"2023-04-20T18:33:42+08:00","level":"warn","caller":"olog/log_test.go:382","content":"hello world"}
+{"@timestamp":"2023-04-20T18:33:42+08:00","level":"warn","caller":"olog/log_test.go:383","content":"hello","order_no":"AWESDDF"}
+{"@timestamp":"2023-04-20T18:33:42+08:00","level":"error","caller":"olog/log_test.go:384","content":"hello world","success":true}
+{"@timestamp":"2023-04-20T18:33:42+08:00","level":"print","content":"hello world","price":32.5,"stack":"\ngithub.com/welllog/olog.TestPlainOutput\n\t/olog/log_test.go:385"}
+{"@timestamp":"2023-04-20T18:33:42+08:00","level":"fatal","caller":"olog/log_test.go:388","content":"fatal exit"}
 ```
 The plain output is as follows:
-![plain](plain.webp)
+```
+2023-04-20T18:32:09+08:00	trace	olog/log_test.go:377	hello world	stack=
+github.com/welllog/olog.TestPlainOutput
+	/olog/log_test.go:377
+testing.tRunner
+	/usr/local/opt/go/libexec/src/testing/testing.go:1576
+runtime.goexit
+	/usr/local/opt/go/libexec/src/runtime/asm_amd64.s:1598
+2023-04-20T18:32:09+08:00	trace	olog/log_test.go:378	hello	name=bob	stack=
+github.com/welllog/olog.TestPlainOutput
+	/olog/log_test.go:378
+testing.tRunner
+	/usr/local/opt/go/libexec/src/testing/testing.go:1576
+runtime.goexit
+	/usr/local/opt/go/libexec/src/runtime/asm_amd64.s:1598
+2023-04-20T18:32:09+08:00	debug	olog/log_test.go:379	hello world
+2023-04-20T18:32:09+08:00	info	olog/log_test.go:380	hello	name=linda	age=18
+2023-04-20T18:32:09+08:00	notice	olog/log_test.go:381	hello world
+2023-04-20T18:32:09+08:00	warn	olog/log_test.go:382	hello world
+2023-04-20T18:32:09+08:00	warn	olog/log_test.go:383	hello	order_no=AWESDDF
+2023-04-20T18:32:09+08:00	error	olog/log_test.go:384	hello world	success=true
+2023-04-20T18:32:09+08:00	print	hello world	price=32.5	stack=
+github.com/welllog/olog.TestPlainOutput
+	/olog/log_test.go:385
+2023-04-20T18:32:09+08:00	fatal	olog/log_test.go:388	fatal exit
+```
 
 ### contextLogger uses
 ```go
@@ -72,15 +99,15 @@ type CustomLogger struct {
 }
 
 func (l *CustomLogger) Slow(a ...any) {
-	l.Log(WARN, WithPrint(a...), WithTag("slow"), WithCallerSkipOne)
+    l.Log(LogOption{Level: WARN, LevelTag: "slow", CallerSkip: 1}, a...)
 }
 
 func (l *CustomLogger) Stat(a ...any) {
-	l.Log(INFO, WithPrint(a...), WithTag("stat"), WithCallerSkipOne)
+    l.Log(LogOption{Level: INFO, LevelTag: "stat", CallerSkip: 1}, a...)
 }
 
 func (l *CustomLogger) Debug(a ...any) {
-	l.Log(DEBUG, WithPrint(a...), WithCallerSkipOne, WithCaller(true))
+    l.Log(LogOption{Level: DEBUG, CallerSkip: 1, EnableCaller: EnableOpen}, a...)
 }
 ```
 
@@ -94,18 +121,19 @@ When implementing the Write method on your own, it is important to note that the
 Log a message and 3 fields(disable caller output and RunParallel):
 ```
 goos: darwin
-goarch: arm64
+goarch: amd64
 pkg: github.com/welllog/olog
-BenchmarkInfo
-BenchmarkInfo/std.logger
-BenchmarkInfo/std.logger-10         	 3740652	       284.4 ns/op	      48 B/op	       1 allocs/op
-BenchmarkInfo/olog.json
-BenchmarkInfo/olog.json-10          	14560014	        83.89 ns/op	      96 B/op	       1 allocs/op
-BenchmarkInfo/olog.plain
-BenchmarkInfo/olog.plain-10         	20607255	        58.84 ns/op	      96 B/op	       1 allocs/op
-BenchmarkInfo/olog.ctx.json
-BenchmarkInfo/olog.ctx.json-10      	 7297224	       150.4 ns/op	     376 B/op	       6 allocs/op
-BenchmarkInfo/olog.ctx.plain
-BenchmarkInfo/olog.ctx.plain-10     	 8775705	       134.7 ns/op	     376 B/op	       6 allocs/op
+cpu: Intel(R) Core(TM) i5-5257U CPU @ 2.70GHz
+BenchmarkInfow
+BenchmarkInfow/std.logger
+BenchmarkInfow/std.logger-4         	 1000000	      1099 ns/op	      48 B/op	       1 allocs/op
+BenchmarkInfow/olog.json
+BenchmarkInfow/olog.json-4          	 1817704	       987.8 ns/op	      96 B/op	       1 allocs/op
+BenchmarkInfow/olog.plain
+BenchmarkInfow/olog.plain-4         	 1588846	       700.4 ns/op	      96 B/op	       1 allocs/op
+BenchmarkInfow/olog.ctx.json
+BenchmarkInfow/olog.ctx.json-4      	 1000000	      1035 ns/op	      96 B/op	       1 allocs/op
+BenchmarkInfow/olog.ctx.plain
+BenchmarkInfow/olog.ctx.plain-4     	 1499271	       913.8 ns/op	      96 B/op	       1 allocs/op
 PASS
 ```

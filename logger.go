@@ -7,6 +7,7 @@ import (
 
 // logger represents a logger instance with configurable options
 type logger struct {
+	appName      string     // the name of the application
 	level        Level      // the minimum level of logging to output
 	enableCaller bool       // flag indicating whether to log the caller information
 	enableColor  bool       // flag indicating whether to use colorized output for levelTag on plain encoding
@@ -37,6 +38,13 @@ func newLogger(opts ...LoggerOption) *logger {
 
 // LoggerOption is a functional option type for configuring a logger instance
 type LoggerOption func(*logger)
+
+// WithLoggerAppName sets the name of the application
+func WithLoggerAppName(name string) LoggerOption {
+	return func(l *logger) {
+		l.appName = name
+	}
+}
 
 // WithLoggerLevel sets the minimum logging level for the logger instance
 func WithLoggerLevel(level Level) LoggerOption {
@@ -80,8 +88,12 @@ func WithLoggerWriter(w Writer) LoggerOption {
 	}
 }
 
-func (l *logger) Log(level Level, opts ...LogOption) {
-	l.log(level, opts...)
+func (l *logger) Log(op LogOption, a ...any) {
+	l.log(op, a...)
+}
+
+func (l *logger) Logf(op LogOption, format string, a ...any) {
+	l.logf(op, format, a...)
 }
 
 func (l *logger) Fatal(a ...any) {
@@ -172,20 +184,73 @@ func (l *logger) IsEnabled(level Level) bool {
 	return level >= l.level
 }
 
-func (l *logger) log(level Level, opts ...LogOption) {
-	if l.IsEnabled(level) {
+func (l *logger) log(op LogOption, a ...any) {
+	if l.IsEnabled(op.Level) {
+		if op.StackSize == 0 {
+			op.StackSize = defStackSize
+		}
 		o := logOption{
-			level:        level,
+			level:        op.Level,
 			enableCaller: l.enableCaller,
-			callerSkip:   defCallerSkip,
+			stackSize:    op.StackSize,
+			callerSkip:   defCallerSkip + op.CallerSkip,
+			msgType:      msgTypePrint,
+			msgArgs:      a,
+			tag:          op.LevelTag,
+			fields:       op.Fields,
 		}
-		for _, opt := range opts {
-			opt(&o)
+
+		if op.EnableCaller != EnableDefault {
+			o.enableCaller = op.EnableCaller == EnableOpen
 		}
+
+		if op.EnableStack != EnableDefault {
+			o.enableStack = op.EnableStack == EnableOpen
+		}
+
 		l.output(&o)
 	}
 
-	if level == FATAL {
+	if op.Level == FATAL {
+		os.Exit(1)
+	}
+}
+
+func (l *logger) logf(op LogOption, format string, a ...any) {
+	if l.IsEnabled(op.Level) {
+		if op.StackSize == 0 {
+			op.StackSize = defStackSize
+		}
+		o := logOption{
+			level:        op.Level,
+			enableCaller: l.enableCaller,
+			stackSize:    op.StackSize,
+			callerSkip:   defCallerSkip + op.CallerSkip,
+			tag:          op.LevelTag,
+			fields:       op.Fields,
+		}
+
+		if op.EnableCaller != EnableDefault {
+			o.enableCaller = op.EnableCaller == EnableOpen
+		}
+
+		if op.EnableStack != EnableDefault {
+			o.enableStack = op.EnableStack == EnableOpen
+		}
+
+		if len(a) > 0 {
+			o.msgType = msgTypePrintf
+			o.msgOrFormat = format
+			o.msgArgs = a
+		} else {
+			o.msgType = msgTypePrintMsg
+			o.msgOrFormat = format
+		}
+
+		l.output(&o)
+	}
+
+	if op.Level == FATAL {
 		os.Exit(1)
 	}
 }
@@ -452,6 +517,7 @@ func (l *logger) output(o *logOption) {
 	}
 
 	o.fields = l.filterFields(o.fields)
+	o.appName = l.appName
 	o.enableColor = l.enableColor
 	o.timeFormat = l.timeFormat
 	if l.encodeType == PLAIN {
@@ -485,11 +551,12 @@ func (l *logger) filterFields(fields []Field) []Field {
 
 func (l *logger) clone() *logger {
 	return &logger{
+		appName:      l.appName,
 		level:        l.level,
 		enableCaller: l.enableCaller,
 		enableColor:  l.enableColor,
-		timeFormat:   l.timeFormat,
 		encodeType:   l.encodeType,
+		timeFormat:   l.timeFormat,
 		writer:       l.writer,
 	}
 }

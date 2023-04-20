@@ -28,6 +28,13 @@ func GetLogger() Logger {
 	return getDefLogger()
 }
 
+// SetAppName sets the name of the application.
+func SetAppName(name string) {
+	l := getDefLogger().clone()
+	l.appName = name
+	setDefLogger(l)
+}
+
 // SetLevel sets the logging level for the default logger.
 func SetLevel(level Level) {
 	l := getDefLogger().clone()
@@ -70,11 +77,14 @@ func SetWriter(w Writer) {
 	setDefLogger(l)
 }
 
-// Log writes a log entry with the given level and options to the default logger.
-// The options are optional and can be used to customize the log entry.
-// This function delegates to the Log method of the default logger instance.
-func Log(level Level, opts ...LogOption) {
-	getDefLogger().log(level, opts...)
+// Log writes a log message with the given log level.
+func Log(opt LogOption, a ...any) {
+	getDefLogger().log(opt, a...)
+}
+
+// Logf writes a log message with the given log level.
+func Logf(opt LogOption, format string, a ...any) {
+	getDefLogger().logf(opt, format, a...)
 }
 
 // Fatal logs a message at fatal level and exits the program with an error status.
