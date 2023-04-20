@@ -38,136 +38,209 @@ func WithEntries(logger Logger, entries map[string]any) Logger {
 	}
 }
 
-func (c *ctxLogger) Log(level Level, opts ...LogOption) {
-	if c.IsEnabled(level) {
-		opts = append(opts, WithFields(c.buildFields()...))
-		c.log(level, opts...)
+func (c *ctxLogger) Log(opt LogOption, a ...any) {
+	if c.IsEnabled(opt.Level) {
+		opt.Fields = c.buildFields(opt.Fields...)
+		c.log(opt, a...)
+	}
+}
+
+func (c *ctxLogger) Logf(opt LogOption, format string, a ...any) {
+	if c.IsEnabled(opt.Level) {
+		opt.Fields = c.buildFields(opt.Fields...)
+		c.logf(opt, format, a...)
 	}
 }
 
 func (c *ctxLogger) Fatal(a ...any) {
 	if c.IsEnabled(FATAL) {
-		c.log(FATAL, WithPrint(a...), WithFields(c.buildFields()...))
+		c.log(LogOption{
+			Level:  FATAL,
+			Fields: c.buildFields(),
+		}, a...)
 	}
 }
 
 func (c *ctxLogger) Fatalf(format string, a ...any) {
 	if c.IsEnabled(FATAL) {
-		c.log(FATAL, WithPrintf(format, a...), WithFields(c.buildFields()...))
+		c.logf(LogOption{
+			Level:  FATAL,
+			Fields: c.buildFields(),
+		}, format, a...)
 	}
 }
 
 func (c *ctxLogger) Fatalw(msg string, fields ...Field) {
 	if c.IsEnabled(FATAL) {
-		c.log(FATAL, WithPrintMsg(msg), WithFields(c.buildFields(fields...)...))
+		c.logf(LogOption{
+			Level:  FATAL,
+			Fields: c.buildFields(fields...),
+		}, msg)
 	}
 }
 
 func (c *ctxLogger) Error(a ...any) {
 	if c.IsEnabled(ERROR) {
-		c.log(ERROR, WithPrint(a...), WithFields(c.buildFields()...))
+		c.log(LogOption{
+			Level:  ERROR,
+			Fields: c.buildFields(),
+		}, a...)
 	}
 }
 
 func (c *ctxLogger) Errorf(format string, a ...any) {
 	if c.IsEnabled(ERROR) {
-		c.log(ERROR, WithPrintf(format, a...), WithFields(c.buildFields()...))
+		c.logf(LogOption{
+			Level:  ERROR,
+			Fields: c.buildFields(),
+		}, format, a...)
 	}
 }
 
 func (c *ctxLogger) Errorw(msg string, fields ...Field) {
 	if c.IsEnabled(ERROR) {
-		c.log(ERROR, WithPrintMsg(msg), WithFields(c.buildFields(fields...)...))
+		c.logf(LogOption{
+			Level:  ERROR,
+			Fields: c.buildFields(fields...),
+		}, msg)
 	}
 }
 
 func (c *ctxLogger) Warn(a ...any) {
 	if c.IsEnabled(WARN) {
-		c.log(WARN, WithPrint(a...), WithFields(c.buildFields()...))
+		c.log(LogOption{
+			Level:  WARN,
+			Fields: c.buildFields(),
+		}, a...)
 	}
 }
 
 func (c *ctxLogger) Warnf(format string, a ...any) {
 	if c.IsEnabled(WARN) {
-		c.log(WARN, WithPrintf(format, a...), WithFields(c.buildFields()...))
+		c.logf(LogOption{
+			Level:  WARN,
+			Fields: c.buildFields(),
+		}, format, a...)
 	}
 }
 
 func (c *ctxLogger) Warnw(msg string, fields ...Field) {
 	if c.IsEnabled(WARN) {
-		c.log(WARN, WithPrintMsg(msg), WithFields(c.buildFields(fields...)...))
+		c.logf(LogOption{
+			Level:  WARN,
+			Fields: c.buildFields(fields...),
+		}, msg)
 	}
 }
 
 func (c *ctxLogger) Notice(a ...any) {
 	if c.IsEnabled(NOTICE) {
-		c.log(NOTICE, WithPrint(a...), WithFields(c.buildFields()...))
+		c.log(LogOption{
+			Level:  NOTICE,
+			Fields: c.buildFields(),
+		}, a...)
 	}
 }
 
 func (c *ctxLogger) Noticef(format string, a ...any) {
 	if c.IsEnabled(NOTICE) {
-		c.log(NOTICE, WithPrintf(format, a...), WithFields(c.buildFields()...))
+		c.logf(LogOption{
+			Level:  NOTICE,
+			Fields: c.buildFields(),
+		}, format, a...)
 	}
 }
 
 func (c *ctxLogger) Noticew(msg string, fields ...Field) {
 	if c.IsEnabled(NOTICE) {
-		c.log(NOTICE, WithPrintMsg(msg), WithFields(c.buildFields(fields...)...))
+		c.logf(LogOption{
+			Level:  NOTICE,
+			Fields: c.buildFields(fields...),
+		}, msg)
 	}
 }
 
 func (c *ctxLogger) Info(a ...any) {
 	if c.IsEnabled(INFO) {
-		c.log(INFO, WithPrint(a...), WithFields(c.buildFields()...))
+		c.log(LogOption{
+			Level:  INFO,
+			Fields: c.buildFields(),
+		}, a...)
 	}
 }
 
 func (c *ctxLogger) Infof(format string, a ...any) {
 	if c.IsEnabled(INFO) {
-		c.log(INFO, WithPrintf(format, a...), WithFields(c.buildFields()...))
+		c.logf(LogOption{
+			Level:  INFO,
+			Fields: c.buildFields(),
+		}, format, a...)
 	}
 }
 
 func (c *ctxLogger) Infow(msg string, fields ...Field) {
 	if c.IsEnabled(INFO) {
-		c.log(INFO, WithPrintMsg(msg), WithFields(c.buildFields(fields...)...))
+		c.logf(LogOption{
+			Level:  INFO,
+			Fields: c.buildFields(fields...),
+		}, msg)
 	}
 }
 
 func (c *ctxLogger) Debug(a ...any) {
 	if c.IsEnabled(DEBUG) {
-		c.log(DEBUG, WithPrint(a...), WithFields(c.buildFields()...))
+		c.log(LogOption{
+			Level:  DEBUG,
+			Fields: c.buildFields(),
+		}, a...)
 	}
 }
 
 func (c *ctxLogger) Debugf(format string, a ...any) {
 	if c.IsEnabled(DEBUG) {
-		c.log(DEBUG, WithPrintf(format, a...), WithFields(c.buildFields()...))
+		c.logf(LogOption{
+			Level:  DEBUG,
+			Fields: c.buildFields(),
+		}, format, a...)
 	}
 }
 
 func (c *ctxLogger) Debugw(msg string, fields ...Field) {
 	if c.IsEnabled(DEBUG) {
-		c.log(DEBUG, WithPrintMsg(msg), WithFields(c.buildFields(fields...)...))
+		c.logf(LogOption{
+			Level:  DEBUG,
+			Fields: c.buildFields(fields...),
+		}, msg)
 	}
 }
 
 func (c *ctxLogger) Trace(a ...any) {
 	if c.IsEnabled(TRACE) {
-		c.log(TRACE, WithPrint(a...), WithFields(c.buildFields()...))
+		c.log(LogOption{
+			Level:       TRACE,
+			EnableStack: EnableOpen,
+			Fields:      c.buildFields(),
+		}, a...)
 	}
 }
 
 func (c *ctxLogger) Tracef(format string, a ...any) {
 	if c.IsEnabled(TRACE) {
-		c.log(TRACE, WithPrintf(format, a...), WithFields(c.buildFields()...))
+		c.logf(LogOption{
+			Level:       TRACE,
+			EnableStack: EnableOpen,
+			Fields:      c.buildFields(),
+		}, format, a...)
 	}
 }
 
 func (c *ctxLogger) Tracew(msg string, fields ...Field) {
 	if c.IsEnabled(TRACE) {
-		c.log(TRACE, WithPrintMsg(msg), WithFields(c.buildFields(fields...)...))
+		c.logf(LogOption{
+			Level:       TRACE,
+			EnableStack: EnableOpen,
+			Fields:      c.buildFields(fields...),
+		}, msg)
 	}
 }
 

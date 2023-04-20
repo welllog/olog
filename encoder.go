@@ -35,7 +35,7 @@ func jsonEncode(o *logOption, w Writer) {
 	)
 
 	if o.enableStack {
-		frames = getCallerFrames(o.callerSkip, int(o.stackSize))
+		frames = getCallerFrames(o.callerSkip, o.stackSize)
 		frame, more = frames.Next()
 		get = true
 	}
@@ -128,7 +128,7 @@ func plainEncode(o *logOption, w Writer) {
 	)
 
 	if o.enableStack {
-		frames = getCallerFrames(o.callerSkip, int(o.stackSize))
+		frames = getCallerFrames(o.callerSkip, o.stackSize)
 		frame, more = frames.Next()
 		get = true
 	}

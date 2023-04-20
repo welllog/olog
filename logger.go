@@ -80,8 +80,12 @@ func WithLoggerWriter(w Writer) LoggerOption {
 	}
 }
 
-func (l *logger) Log(level Level, opts ...LogOption) {
-	l.log(level, opts...)
+func (l *logger) Log(op LogOption, a ...any) {
+	l.log(op, a...)
+}
+
+func (l *logger) Logf(op LogOption, format string, a ...any) {
+	l.logf(op, format, a...)
 }
 
 func (l *logger) Fatal(a ...any) {
@@ -172,20 +176,71 @@ func (l *logger) IsEnabled(level Level) bool {
 	return level >= l.level
 }
 
-func (l *logger) log(level Level, opts ...LogOption) {
-	if l.IsEnabled(level) {
+func (l *logger) log(op LogOption, a ...any) {
+	if l.IsEnabled(op.Level) {
 		o := logOption{
-			level:        level,
+			level:        op.Level,
 			enableCaller: l.enableCaller,
-			callerSkip:   defCallerSkip,
+			enableColor:  l.enableColor,
+			stackSize:    op.StackSize,
+			callerSkip:   defCallerSkip + op.CallerSkip,
+			msgType:      msgTypePrint,
+			msgArgs:      a,
+			tag:          op.LevelTag,
+			timeFormat:   l.timeFormat,
+			fields:       op.Fields,
 		}
-		for _, opt := range opts {
-			opt(&o)
+
+		if op.EnableCaller != EnableDefault {
+			o.enableCaller = op.EnableCaller == EnableOpen
 		}
+
+		if op.EnableStack != EnableDefault {
+			o.enableStack = op.EnableStack == EnableOpen
+		}
+
 		l.output(&o)
 	}
 
-	if level == FATAL {
+	if op.Level == FATAL {
+		os.Exit(1)
+	}
+}
+
+func (l *logger) logf(op LogOption, format string, a ...any) {
+	if l.IsEnabled(op.Level) {
+		o := logOption{
+			level:        op.Level,
+			enableCaller: l.enableCaller,
+			enableColor:  l.enableColor,
+			stackSize:    op.StackSize,
+			callerSkip:   defCallerSkip + op.CallerSkip,
+			tag:          op.LevelTag,
+			timeFormat:   l.timeFormat,
+			fields:       op.Fields,
+		}
+
+		if op.EnableCaller != EnableDefault {
+			o.enableCaller = op.EnableCaller == EnableOpen
+		}
+
+		if op.EnableStack != EnableDefault {
+			o.enableStack = op.EnableStack == EnableOpen
+		}
+
+		if len(a) > 0 {
+			o.msgType = msgTypePrintf
+			o.msgOrFormat = format
+			o.msgArgs = a
+		} else {
+			o.msgType = msgTypePrintMsg
+			o.msgOrFormat = format
+		}
+
+		l.output(&o)
+	}
+
+	if op.Level == FATAL {
 		os.Exit(1)
 	}
 }
@@ -449,6 +504,10 @@ func (l *logger) output(o *logOption) {
 
 	if o.callerSkip <= 0 {
 		o.callerSkip = defCallerSkip
+	}
+
+	if o.stackSize == 0 {
+		o.stackSize = defStackSize
 	}
 
 	o.fields = l.filterFields(o.fields)
