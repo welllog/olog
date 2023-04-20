@@ -178,16 +178,17 @@ func (l *logger) IsEnabled(level Level) bool {
 
 func (l *logger) log(op LogOption, a ...any) {
 	if l.IsEnabled(op.Level) {
+		if op.StackSize == 0 {
+			op.StackSize = defStackSize
+		}
 		o := logOption{
 			level:        op.Level,
 			enableCaller: l.enableCaller,
-			enableColor:  l.enableColor,
 			stackSize:    op.StackSize,
 			callerSkip:   defCallerSkip + op.CallerSkip,
 			msgType:      msgTypePrint,
 			msgArgs:      a,
 			tag:          op.LevelTag,
-			timeFormat:   l.timeFormat,
 			fields:       op.Fields,
 		}
 
@@ -209,14 +210,15 @@ func (l *logger) log(op LogOption, a ...any) {
 
 func (l *logger) logf(op LogOption, format string, a ...any) {
 	if l.IsEnabled(op.Level) {
+		if op.StackSize == 0 {
+			op.StackSize = defStackSize
+		}
 		o := logOption{
 			level:        op.Level,
 			enableCaller: l.enableCaller,
-			enableColor:  l.enableColor,
 			stackSize:    op.StackSize,
 			callerSkip:   defCallerSkip + op.CallerSkip,
 			tag:          op.LevelTag,
-			timeFormat:   l.timeFormat,
 			fields:       op.Fields,
 		}
 
@@ -506,10 +508,6 @@ func (l *logger) output(o *logOption) {
 		o.callerSkip = defCallerSkip
 	}
 
-	if o.stackSize == 0 {
-		o.stackSize = defStackSize
-	}
-
 	o.fields = l.filterFields(o.fields)
 	o.enableColor = l.enableColor
 	o.timeFormat = l.timeFormat
@@ -547,8 +545,8 @@ func (l *logger) clone() *logger {
 		level:        l.level,
 		enableCaller: l.enableCaller,
 		enableColor:  l.enableColor,
-		timeFormat:   l.timeFormat,
 		encodeType:   l.encodeType,
+		timeFormat:   l.timeFormat,
 		writer:       l.writer,
 	}
 }

@@ -70,10 +70,12 @@ func SetWriter(w Writer) {
 	setDefLogger(l)
 }
 
+// Log writes a log message with the given log level.
 func Log(opt LogOption, a ...any) {
 	getDefLogger().log(opt, a...)
 }
 
+// Logf writes a log message with the given log level.
 func Logf(opt LogOption, format string, a ...any) {
 	getDefLogger().logf(opt, format, a...)
 }

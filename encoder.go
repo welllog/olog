@@ -79,19 +79,18 @@ func jsonEncode(o *logOption, w Writer) {
 		_, _ = buf.WriteString(`,"stack":"`)
 		if frame.File != "" {
 			for {
+				_, _ = buf.WriteString(`\n`)
 				_, _ = buf.WriteString(shortFile(frame.File))
 				_ = buf.WriteByte(':')
 				buf.WriteInt64(int64(frame.Line))
 				_ = buf.WriteByte('&')
 				_, _ = buf.WriteString(frame.Function)
-				_ = buf.WriteByte(' ')
 
 				if !more {
 					break
 				}
 				frame, more = frames.Next()
 			}
-			buf.Back(1)
 		}
 		_ = buf.WriteByte('"')
 	}
@@ -173,19 +172,18 @@ func plainEncode(o *logOption, w Writer) {
 		_, _ = buf.WriteString("stack=")
 		if frame.File != "" {
 			for {
+				_ = buf.WriteByte('\n')
 				_, _ = buf.WriteString(shortFile(frame.File))
 				_ = buf.WriteByte(':')
 				buf.WriteInt64(int64(frame.Line))
 				_ = buf.WriteByte('&')
 				_, _ = buf.WriteString(frame.Function)
-				_ = buf.WriteByte(' ')
 
 				if !more {
 					break
 				}
 				frame, more = frames.Next()
 			}
-			buf.Back(1)
 		}
 	}
 

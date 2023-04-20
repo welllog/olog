@@ -21,25 +21,45 @@
     Warnf("hello %s", "world")
     Warnw("hello", Field{Key: "order_no", Value: "AWESDDF"})
     Errorw("hello world", Field{Key: "success", Value: true})
-    Log(DEBUG, WithTag("print"), WithPrintMsg("hello world"), WithCaller(false),
-        WithFields(Field{Key: "price", Value: 32.5}), WithCallStack(1))
+    Logf(LogOption{Level: DEBUG, LevelTag: "print", EnableCaller: EnableClose, 
+		Fields: []Field{{Key: "price", Value: 32.5}},
+        EnableStack: EnableOpen, StackSize: 1},
+        "hello world")
     Fatal("fatal exit")
 ```
 The json output is as follows:
 ```json
-{"@timestamp":"2023-04-20T00:25:35+08:00","level":"trace","caller":"olog/log_test.go:377","content":"hello world","stack":"olog/log_test.go:377&github.com/welllog/olog.TestPlainOutput testing/testing.go:1576&testing.tRunner runtime/asm_arm64.s:1172&runtime.goexit"}
-{"@timestamp":"2023-04-20T00:25:35+08:00","level":"trace","caller":"olog/log_test.go:378","content":"hello","name":"bob","stack":"olog/log_test.go:378&github.com/welllog/olog.TestPlainOutput testing/testing.go:1576&testing.tRunner runtime/asm_arm64.s:1172&runtime.goexit"}
-{"@timestamp":"2023-04-20T00:25:35+08:00","level":"debug","caller":"olog/log_test.go:379","content":"hello world"}
-{"@timestamp":"2023-04-20T00:25:35+08:00","level":"info","caller":"olog/log_test.go:380","content":"hello","name":"linda","age":18}
-{"@timestamp":"2023-04-20T00:25:35+08:00","level":"notice","caller":"olog/log_test.go:381","content":"hello world"}
-{"@timestamp":"2023-04-20T00:25:35+08:00","level":"warn","caller":"olog/log_test.go:382","content":"hello world"}
-{"@timestamp":"2023-04-20T00:25:35+08:00","level":"warn","caller":"olog/log_test.go:383","content":"hello","order_no":"AWESDDF"}
-{"@timestamp":"2023-04-20T00:25:35+08:00","level":"error","caller":"olog/log_test.go:384","content":"hello world","success":true}
-{"@timestamp":"2023-04-20T00:25:35+08:00","level":"print","content":"hello world","price":32.5,"stack":"olog/log_test.go:385&github.com/welllog/olog.TestPlainOutput"}
-{"@timestamp":"2023-04-20T00:25:35+08:00","level":"fatal","caller":"olog/log_test.go:387","content":"fatal exit"}
+{"@timestamp":"2023-04-20T16:13:00+08:00","level":"trace","caller":"olog/log_test.go:377","content":"hello world","stack":"\nolog/log_test.go:377&github.com/welllog/olog.TestPlainOutput\ntesting/testing.go:1576&testing.tRunner\nruntime/asm_amd64.s:1598&runtime.goexit"}
+{"@timestamp":"2023-04-20T16:13:00+08:00","level":"trace","caller":"olog/log_test.go:378","content":"hello","name":"bob","stack":"\nolog/log_test.go:378&github.com/welllog/olog.TestPlainOutput\ntesting/testing.go:1576&testing.tRunner\nruntime/asm_amd64.s:1598&runtime.goexit"}
+{"@timestamp":"2023-04-20T16:13:00+08:00","level":"debug","caller":"olog/log_test.go:379","content":"hello world"}
+{"@timestamp":"2023-04-20T16:13:00+08:00","level":"info","caller":"olog/log_test.go:380","content":"hello","name":"linda","age":18}
+{"@timestamp":"2023-04-20T16:13:00+08:00","level":"notice","caller":"olog/log_test.go:381","content":"hello world"}
+{"@timestamp":"2023-04-20T16:13:00+08:00","level":"warn","caller":"olog/log_test.go:382","content":"hello world"}
+{"@timestamp":"2023-04-20T16:13:00+08:00","level":"warn","caller":"olog/log_test.go:383","content":"hello","order_no":"AWESDDF"}
+{"@timestamp":"2023-04-20T16:13:00+08:00","level":"error","caller":"olog/log_test.go:384","content":"hello world","success":true}
+{"@timestamp":"2023-04-20T16:13:00+08:00","level":"print","content":"hello world","price":32.5,"stack":"\nolog/log_test.go:385&github.com/welllog/olog.TestPlainOutput"}
+{"@timestamp":"2023-04-20T16:13:00+08:00","level":"fatal","caller":"olog/log_test.go:388","content":"fatal exit"}
 ```
 The plain output is as follows:
-![plain](plain.webp)
+```
+2023-04-20T16:09:26+08:00	trace	olog/log_test.go:377	hello world	stack=
+olog/log_test.go:377&github.com/welllog/olog.TestPlainOutput
+testing/testing.go:1576&testing.tRunner
+runtime/asm_amd64.s:1598&runtime.goexit
+2023-04-20T16:09:26+08:00	trace	olog/log_test.go:378	hello	name=bob	stack=
+olog/log_test.go:378&github.com/welllog/olog.TestPlainOutput
+testing/testing.go:1576&testing.tRunner
+runtime/asm_amd64.s:1598&runtime.goexit
+2023-04-20T16:09:26+08:00	debug	olog/log_test.go:379	hello world
+2023-04-20T16:09:26+08:00	info	olog/log_test.go:380	hello	name=linda	age=18
+2023-04-20T16:09:26+08:00	notice	olog/log_test.go:381	hello world
+2023-04-20T16:09:26+08:00	warn	olog/log_test.go:382	hello world
+2023-04-20T16:09:26+08:00	warn	olog/log_test.go:383	hello	order_no=AWESDDF
+2023-04-20T16:09:26+08:00	error	olog/log_test.go:384	hello world	success=true
+2023-04-20T16:09:26+08:00	print	hello world	price=32.5	stack=
+olog/log_test.go:385&github.com/welllog/olog.TestPlainOutput
+2023-04-20T16:09:26+08:00	fatal	olog/log_test.go:388	fatal exit
+```
 
 ### contextLogger uses
 ```go
@@ -72,15 +92,15 @@ type CustomLogger struct {
 }
 
 func (l *CustomLogger) Slow(a ...any) {
-	l.Log(WARN, WithPrint(a...), WithTag("slow"), WithCallerSkipOne)
+    l.Log(LogOption{Level: WARN, LevelTag: "slow", CallerSkip: 1}, a...)
 }
 
 func (l *CustomLogger) Stat(a ...any) {
-	l.Log(INFO, WithPrint(a...), WithTag("stat"), WithCallerSkipOne)
+    l.Log(LogOption{Level: INFO, LevelTag: "stat", CallerSkip: 1}, a...)
 }
 
 func (l *CustomLogger) Debug(a ...any) {
-	l.Log(DEBUG, WithPrint(a...), WithCallerSkipOne, WithCaller(true))
+    l.Log(LogOption{Level: DEBUG, CallerSkip: 1, EnableCaller: EnableOpen}, a...)
 }
 ```
 
