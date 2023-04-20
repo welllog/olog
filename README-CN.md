@@ -120,19 +120,18 @@ func (l *CustomLogger) Debug(a ...any) {
 记录一条消息和3个字段(禁用caller输出,并发测试)：
 ```
 goos: darwin
-goarch: amd64
+goarch: arm64
 pkg: github.com/welllog/olog
-cpu: Intel(R) Core(TM) i5-5257U CPU @ 2.70GHz
 BenchmarkInfow
 BenchmarkInfow/std.logger
-BenchmarkInfow/std.logger-4         	 1000000	      1099 ns/op	      48 B/op	       1 allocs/op
+BenchmarkInfow/std.logger-10         	 3760806	       287.4 ns/op	      48 B/op	       1 allocs/op
 BenchmarkInfow/olog.json
-BenchmarkInfow/olog.json-4          	 1817704	       987.8 ns/op	      96 B/op	       1 allocs/op
+BenchmarkInfow/olog.json-10          	14397530	        77.93 ns/op	      96 B/op	       1 allocs/op
 BenchmarkInfow/olog.plain
-BenchmarkInfow/olog.plain-4         	 1588846	       700.4 ns/op	      96 B/op	       1 allocs/op
+BenchmarkInfow/olog.plain-10         	21455214	        56.19 ns/op	      96 B/op	       1 allocs/op
 BenchmarkInfow/olog.ctx.json
-BenchmarkInfow/olog.ctx.json-4      	 1000000	      1035 ns/op	      96 B/op	       1 allocs/op
+BenchmarkInfow/olog.ctx.json-10      	14290038	        83.48 ns/op	      96 B/op	       1 allocs/op
 BenchmarkInfow/olog.ctx.plain
-BenchmarkInfow/olog.ctx.plain-4     	 1499271	       913.8 ns/op	      96 B/op	       1 allocs/op
+BenchmarkInfow/olog.ctx.plain-10     	19133161	        59.64 ns/op	      96 B/op	       1 allocs/op
 PASS
 ```
