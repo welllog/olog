@@ -3,9 +3,7 @@ package olog
 // Logger is an interface that defines the methods for logging.
 type Logger interface {
 	// Log writes a log message with the given log level.
-	Log(opt LogOption, args ...any)
-	// Logf writes a log message with the given log level.
-	Logf(opt LogOption, format string, args ...any)
+	Log(r Record)
 
 	// Fatal writes a log message with the FATAL log level and call os.Exit(1).
 	Fatal(args ...any)
@@ -45,8 +43,7 @@ type Logger interface {
 	// IsEnabled returns whether the given log level is enabled or not.
 	IsEnabled(level Level) bool
 
-	log(opt LogOption, args ...any)
-	logf(opt LogOption, format string, args ...any)
+	log(opt Record)
 	buildFields(fields ...Field) []Field
 }
 
@@ -56,69 +53,32 @@ type Field struct {
 	Value any
 }
 
+// EnableOp is the enable of caller,stack,color information in the log message.
 type EnableOp uint8
 
-const (
-	EnableDefault EnableOp = iota
-	EnableOpen
-	EnableClose
-)
-
-type LogOption struct {
-	Level        Level
-	EnableCaller EnableOp
-	EnableStack  EnableOp
-	StackSize    uint8
-	CallerSkip   int8
-	LevelTag     string
-	Fields       []Field
+func (e EnableOp) IsOpen() bool {
+	return e == Enable
 }
 
-// logOption is a struct that represents options to use when logging a message.
-type logOption struct {
-	appName      string  // appName is the name of the application that created the log message.
-	level        Level   // level is the severity level of the log message.
-	enableCaller bool    // enableCaller indicates whether to include caller information in the log message.
-	enableColor  bool    // enableColor indicates whether to enable colorized output for the levelTag on plain encoding.
-	enableStack  bool    // enableStack indicates whether to include stack trace information in the log message.
-	stackSize    uint8   // stackSize is the maximum number of stack frames to include in the log message.
-	callerSkip   int8    // callerSkip is the number of stack frames to skip to find the caller information.
-	msgType      msgType // msgType is the type of the log message.
-	msgArgs      []any   // msgArgs is a slice of arguments to the log message.
-	msgOrFormat  string  // msgOrFormat is the format string of the log message.
+const (
+	Default EnableOp = iota
+	Enable
+	Disable
+)
 
-	// tag is the string representation of the severity level
-	// The default debug, info, warn, error, and fatal correspond to DEBUG, INFO, WARN, ERROR, and FATAL log levels respectively
-	// users can also customize semantic tags, such as slow.
-	tag        string
-	timeFormat string
-	fields     []Field // fields is a slice of key-value pairs of additional data to include in the log message.
+type Record struct {
+	Level       Level    // Level is the severity level of the log message.
+	Caller      EnableOp // Caller is the enable of caller information in the log message.
+	Stack       EnableOp // Stack is the enable of stack trace information in the log message.
+	StackSize   uint8    // StackSize is the maximum number of stack frames to include in the log message.
+	CallerSkip  int8     // CallerSkip is the number of stack frames to skip to find the caller information.
+	MsgOrFormat string   // MsgOrFormat is the string representation of the log message
+	MsgArgs     []any    // MsgArgs is the arguments of the log message
+	Fields      []Field  // Fields is a slice of key-value pairs of additional data to include in the log message.
+	LevelTag    string   // LevelTag is the string representation of the severity level
+	App         string   // App is the name of the application that created the log message.
+	TimeFmt     string   // TimeFmt is the format string of the log message.
 }
 
-// defCallerSkip is the default number of stack frames to skip to find the caller information.
-const defCallerSkip = 5
-
-// defStackSize is the default maximum number of stack frames to include in the log message.
-const defStackSize = 5
-
-type msgType int8
-
-const (
-	msgTypePrint msgType = iota + 1
-	msgTypePrintf
-	msgTypePrintMsg
-)
-
-var (
-	fieldTime    = "@timestamp"
-	fieldLevel   = "level"
-	fieldContent = "content"
-	fieldCaller  = "caller"
-
-	filterField = map[string]struct{}{
-		fieldTime:    {},
-		fieldLevel:   {},
-		fieldContent: {},
-		fieldCaller:  {},
-	}
-)
+// Encoder is a function that encodes a log message.
+type Encoder func(Record, Writer)

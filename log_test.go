@@ -330,8 +330,8 @@ func TestLog(t *testing.T) {
 	initTestLogger()
 	SetCaller(true)
 	SetEncode(PLAIN)
-	Logf(LogOption{Level: INFO, LevelTag: "stat", Fields: []Field{{Key: "name", Value: "bob"}}}, "test log")
-	Logf(LogOption{Level: WARN, EnableCaller: EnableClose, LevelTag: "slow"}, "test log")
+	Log(Record{Level: INFO, LevelTag: "stat", Fields: []Field{{Key: "name", Value: "bob"}}, MsgOrFormat: "test log"})
+	Log(Record{Level: WARN, Caller: Disable, LevelTag: "slow", MsgOrFormat: "test log"})
 }
 
 type customLogger struct {
@@ -339,11 +339,11 @@ type customLogger struct {
 }
 
 func (l *customLogger) Slow(a ...any) {
-	l.Log(LogOption{Level: WARN, LevelTag: "slow", CallerSkip: 1}, a...)
+	l.Log(Record{Level: WARN, LevelTag: "slow", CallerSkip: 1, MsgArgs: a})
 }
 
 func (l *customLogger) Stat(a ...any) {
-	l.Log(LogOption{Level: INFO, LevelTag: "stat", CallerSkip: 1}, a...)
+	l.Log(Record{Level: INFO, LevelTag: "stat", CallerSkip: 1, MsgArgs: a})
 }
 
 func TestWrapLogger(t *testing.T) {
@@ -382,9 +382,8 @@ func TestPlainOutput(t *testing.T) {
 	Warnf("hello %s", "world")
 	Warnw("hello", Field{Key: "order_no", Value: "AWESDDF"})
 	Errorw("hello world", Field{Key: "success", Value: true})
-	Logf(LogOption{Level: DEBUG, LevelTag: "print", EnableCaller: EnableClose, Fields: []Field{{Key: "price", Value: 32.5}},
-		EnableStack: EnableOpen, StackSize: 1},
-		"hello world")
+	Log(Record{Level: DEBUG, LevelTag: "print", Caller: Disable, Fields: []Field{{Key: "price", Value: 32.5}},
+		Stack: Enable, StackSize: 1, MsgOrFormat: "hello world"})
 	//Fatal("fatal exit")
 }
 

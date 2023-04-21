@@ -6,7 +6,7 @@ import (
 )
 
 // EncodeType is an enumeration type for different encoding types.
-type EncodeType int
+type EncodeType int8
 
 const (
 	// JSON represents the JSON encoding type.
@@ -17,19 +17,66 @@ const (
 	sep = '\t'
 )
 
-// jsonEncode to encode a logOption object as JSON and write it to the given Writer.
-// Takes a pointer to the logOption object and a Writer object as input.
-func jsonEncode(o *logOption, w Writer) {
+func FilterFields(fields []Field) []Field {
+	n := len(fields)
+	if n == 0 {
+		return fields
+	}
+
+	set := make(map[string]struct{}, n)
+	var remain int
+	for idx, field := range fields {
+		if !isSkipField(set, field.Key) {
+			fields[remain], fields[idx] = fields[idx], fields[remain]
+			remain++
+		}
+	}
+	return fields[:remain]
+}
+
+func isSkipField(keysSet map[string]struct{}, key string) bool {
+	_, ok := filterField[key]
+	if ok {
+		return true
+	}
+
+	_, ok = keysSet[key]
+	if ok {
+		return true
+	}
+
+	keysSet[key] = struct{}{}
+	return false
+}
+
+var (
+	fieldTime    = "@timestamp"
+	fieldLevel   = "level"
+	fieldContent = "content"
+	fieldCaller  = "caller"
+	fieldStack   = "stack"
+
+	filterField = map[string]struct{}{
+		fieldTime:    {},
+		fieldLevel:   {},
+		fieldContent: {},
+		fieldCaller:  {},
+		fieldStack:   {},
+	}
+)
+
+// jsonEncode to encode a Record object as JSON and write it to the given Writer.
+func jsonEncode(r Record, w Writer) {
 	buf := getBuf()
 
 	_, _ = buf.WriteString(`{"@timestamp":"`)
-	buf.WriteTime(time.Now(), o.timeFormat)
+	buf.WriteTime(time.Now(), r.TimeFmt)
 	_, _ = buf.WriteString(`","level":"`)
-	_, _ = buf.WriteString(o.tag)
+	_, _ = buf.WriteString(r.LevelTag)
 
-	if o.appName != "" {
+	if r.App != "" {
 		_, _ = buf.WriteString(`","app":"`)
-		_, _ = buf.WriteString(o.appName)
+		_, _ = buf.WriteString(r.App)
 	}
 
 	var (
@@ -39,13 +86,13 @@ func jsonEncode(o *logOption, w Writer) {
 		frames *runtime.Frames
 	)
 
-	if o.enableStack {
-		frames = getCallerFrames(o.callerSkip, o.stackSize)
+	if r.Stack.IsOpen() {
+		frames = getCallerFrames(r.CallerSkip, r.StackSize)
 		frame, more = frames.Next()
 		get = true
 	}
 
-	if o.enableCaller {
+	if r.Caller.IsOpen() {
 		var (
 			file string
 			line int
@@ -53,7 +100,7 @@ func jsonEncode(o *logOption, w Writer) {
 		if get {
 			file, line = frame.File, frame.Line
 		} else {
-			file, line = getCaller(o.callerSkip)
+			file, line = getCaller(r.CallerSkip)
 		}
 		_, _ = buf.WriteString(`","caller":"`)
 		_, _ = buf.WriteString(shortFile(file))
@@ -62,25 +109,30 @@ func jsonEncode(o *logOption, w Writer) {
 	}
 
 	_, _ = buf.WriteString(`","content":`)
-	switch o.msgType {
-	case msgTypePrint:
-		buf.WriteQuoteSprint(o.msgArgs...)
-	case msgTypePrintf:
-		buf.WriteQuoteSprintf(o.msgOrFormat, o.msgArgs...)
-	case msgTypePrintMsg:
-		buf.WriteQuoteString(o.msgOrFormat)
+
+	if len(r.MsgArgs) > 0 {
+		if r.MsgOrFormat != "" {
+			buf.WriteQuoteSprintf(r.MsgOrFormat, r.MsgArgs...)
+		} else {
+			buf.WriteQuoteSprint(r.MsgArgs...)
+		}
+	} else {
+		buf.WriteQuoteString(r.MsgOrFormat)
 	}
 
-	// Loop over the fields of the logOption object and write them to the buffer as JSON.
-	for _, field := range o.fields {
-		// Write the field key and value to the buffer as JSON.
-		_, _ = buf.WriteString(`,"`)
-		_, _ = buf.WriteString(field.Key)
-		_, _ = buf.WriteString(`":`)
-		buf.WriteAny(field.Value, true)
+	set := make(map[string]struct{}, len(r.Fields))
+	// Loop over the fields of the Record object and write them to the buffer as JSON.
+	for _, field := range r.Fields {
+		if !isSkipField(set, field.Key) {
+			// Write the field key and value to the buffer as JSON.
+			_, _ = buf.WriteString(`,"`)
+			_, _ = buf.WriteString(field.Key)
+			_, _ = buf.WriteString(`":`)
+			buf.WriteAny(field.Value, true)
+		}
 	}
 
-	if o.enableStack {
+	if r.Stack.IsOpen() {
 		_, _ = buf.WriteString(`,"stack":"`)
 		if frame.File != "" {
 			for {
@@ -104,28 +156,27 @@ func jsonEncode(o *logOption, w Writer) {
 	_, _ = buf.WriteString("}\n")
 
 	// Write the contents of the buffer to the Writer.
-	_, _ = w.Write(o.level, buf.Bytes())
+	_, _ = w.Write(r.Level, buf.Bytes())
 
 	// Reset the buffer and return it to the pool for re-use.
 	putBuf(buf)
 }
 
-// plainEncode to encode a logOption object as plain text and write it to the given Writer.
-// Takes a pointer to the logOption object and a Writer object as input.
-func plainEncode(o *logOption, w Writer) {
+// plainEncode to encode a Record object as plain text and write it to the given Writer.
+func plainEncode(r Record, w Writer, enableColor bool) {
 	buf := getBuf()
 
-	buf.WriteTime(time.Now(), o.timeFormat)
+	buf.WriteTime(time.Now(), r.TimeFmt)
 	_ = buf.WriteByte(sep)
-	if o.enableColor {
-		writeLevelWithColor(o.level, o.tag, buf)
+	if enableColor {
+		writeLevelWithColor(r.Level, r.LevelTag, buf)
 	} else {
-		_, _ = buf.WriteString(o.tag)
+		_, _ = buf.WriteString(r.LevelTag)
 	}
 	_ = buf.WriteByte(sep)
 
-	if o.appName != "" {
-		_, _ = buf.WriteString(o.appName)
+	if r.App != "" {
+		_, _ = buf.WriteString(r.App)
 		_ = buf.WriteByte(sep)
 	}
 
@@ -136,13 +187,13 @@ func plainEncode(o *logOption, w Writer) {
 		frames *runtime.Frames
 	)
 
-	if o.enableStack {
-		frames = getCallerFrames(o.callerSkip, o.stackSize)
+	if r.Stack.IsOpen() {
+		frames = getCallerFrames(r.CallerSkip, r.StackSize)
 		frame, more = frames.Next()
 		get = true
 	}
 
-	if o.enableCaller {
+	if r.Caller.IsOpen() {
 		var (
 			file string
 			line int
@@ -150,7 +201,7 @@ func plainEncode(o *logOption, w Writer) {
 		if get {
 			file, line = frame.File, frame.Line
 		} else {
-			file, line = getCaller(o.callerSkip)
+			file, line = getCaller(r.CallerSkip)
 		}
 		file = shortFile(file)
 
@@ -160,24 +211,28 @@ func plainEncode(o *logOption, w Writer) {
 		_ = buf.WriteByte(sep)
 	}
 
-	switch o.msgType {
-	case msgTypePrint:
-		buf.WriteSprint(o.msgArgs...)
-	case msgTypePrintf:
-		buf.WriteSprintf(o.msgOrFormat, o.msgArgs...)
-	case msgTypePrintMsg:
-		_, _ = buf.WriteString(o.msgOrFormat)
+	if len(r.MsgArgs) > 0 {
+		if r.MsgOrFormat != "" {
+			buf.WriteSprintf(r.MsgOrFormat, r.MsgArgs...)
+		} else {
+			buf.WriteSprint(r.MsgArgs...)
+		}
+	} else {
+		_, _ = buf.WriteString(r.MsgOrFormat)
 	}
 
-	// Loop over the fields of the logOption object and write them to the buffer as plain text.
-	for _, field := range o.fields {
-		_ = buf.WriteByte(sep)
-		_, _ = buf.WriteString(field.Key)
-		_ = buf.WriteByte('=')
-		buf.WriteAny(field.Value, false)
+	set := make(map[string]struct{}, len(r.Fields))
+	// Loop over the fields of the Record object and write them to the buffer as plain text.
+	for _, field := range r.Fields {
+		if !isSkipField(set, field.Key) {
+			_ = buf.WriteByte(sep)
+			_, _ = buf.WriteString(field.Key)
+			_ = buf.WriteByte('=')
+			buf.WriteAny(field.Value, false)
+		}
 	}
 
-	if o.enableStack {
+	if r.Stack.IsOpen() {
 		_ = buf.WriteByte(sep)
 		_, _ = buf.WriteString("stack=")
 		if frame.File != "" {
@@ -201,7 +256,7 @@ func plainEncode(o *logOption, w Writer) {
 	_ = buf.WriteByte('\n')
 
 	// Write the contents of the buffer to the Writer.
-	_, _ = w.Write(o.level, buf.Bytes())
+	_, _ = w.Write(r.Level, buf.Bytes())
 
 	// Reset the buffer and return it to the pool for re-use.
 	putBuf(buf)

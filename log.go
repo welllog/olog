@@ -31,7 +31,7 @@ func GetLogger() Logger {
 // SetAppName sets the name of the application.
 func SetAppName(name string) {
 	l := getDefLogger().clone()
-	l.appName = name
+	l.app = name
 	setDefLogger(l)
 }
 
@@ -45,46 +45,62 @@ func SetLevel(level Level) {
 // SetCaller sets whether or not to log the caller's function name and line number for the default logger.
 func SetCaller(enable bool) {
 	l := getDefLogger().clone()
-	l.enableCaller = enable
+	if enable {
+		l.caller = Enable
+	} else {
+		l.caller = Disable
+	}
 	setDefLogger(l)
 }
 
 // SetColor sets whether or not to use colorized output levelTag on plain encoding for the default logger.
 func SetColor(enable bool) {
 	l := getDefLogger().clone()
-	l.enableColor = enable
+	if enable {
+		l.color = Enable
+	} else {
+		l.color = Disable
+	}
 	setDefLogger(l)
 }
 
 // SetTimeFormat sets the time format string for the default logger.
 func SetTimeFormat(format string) {
 	l := getDefLogger().clone()
-	l.timeFormat = format
+	l.timeFmt = format
 	setDefLogger(l)
 }
 
 // SetEncode sets the log encoding type for the default logger.
 func SetEncode(e EncodeType) {
 	l := getDefLogger().clone()
-	l.encodeType = e
+	switch e {
+	case PLAIN, JSON:
+		l.encType = e
+	default:
+		l.encType = JSON
+	}
+	setDefLogger(l)
+}
+
+// SetEncoder sets the log encoding type and encoder for the default logger.
+func SetEncoder(e Encoder) {
+	l := getDefLogger().clone()
+	l.encType = -1
+	l.enc = e
 	setDefLogger(l)
 }
 
 // SetWriter sets the log writer for the default logger.
 func SetWriter(w Writer) {
 	l := getDefLogger().clone()
-	l.writer = w
+	l.wr = w
 	setDefLogger(l)
 }
 
 // Log writes a log message with the given log level.
-func Log(opt LogOption, a ...any) {
-	getDefLogger().log(opt, a...)
-}
-
-// Logf writes a log message with the given log level.
-func Logf(opt LogOption, format string, a ...any) {
-	getDefLogger().logf(opt, format, a...)
+func Log(r Record) {
+	getDefLogger().log(r)
 }
 
 // Fatal logs a message at fatal level and exits the program with an error status.

@@ -249,5 +249,6 @@ func TestWithContext(t *testing.T) {
 
 	l = WithContext(l, context.WithValue(context.Background(), "name", "linda"))
 	l.Debug("test 5")
-	l.Logf(LogOption{Level: DEBUG, EnableCaller: EnableClose, LevelTag: "print", EnableStack: EnableOpen, StackSize: 0}, "test 6")
+	l.Log(Record{Level: DEBUG, Caller: Disable, LevelTag: "print", Stack: Enable, StackSize: 0,
+		MsgOrFormat: "test 6"})
 }
