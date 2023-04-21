@@ -4,7 +4,7 @@
 
 # olog
 * olog is a lightweight, high-performance, out-of-the-box logging library that relies solely on the Go standard library.
-* Supports outputting logs in both JSON and plain text formats.
+* Support outputting logs in JSON, plain text, and custom formats.
 * Supports setting context handling functions to retrieve fields from the context for output.
 * Supports seven log levels: TRACE, DEBUG, INFO, NOTICE, WARN, ERROR, and FATAL, corresponding to the "trace", "debug", "info", "notice", "warn", "error", and "fatal" tags. Users can also define their own semantic tags, such as "slow" and "stat".
 * Provides output switch control for all log levels except FATAL.
@@ -21,10 +21,8 @@
     Warnf("hello %s", "world")
     Warnw("hello", Field{Key: "order_no", Value: "AWESDDF"})
     Errorw("hello world", Field{Key: "success", Value: true})
-    Logf(LogOption{Level: DEBUG, LevelTag: "print", EnableCaller: EnableClose, 
-		Fields: []Field{{Key: "price", Value: 32.5}},
-        EnableStack: EnableOpen, StackSize: 1},
-        "hello world")
+    Log(Record{Level: DEBUG, LevelTag: "print", Caller: Disable, Fields: []Field{{Key: "price", Value: 32.5}},
+        Stack: Enable, StackSize: 1, MsgOrFormat: "hello world"})
     Fatal("fatal exit")
 ```
 The json output is as follows:
@@ -99,15 +97,15 @@ type CustomLogger struct {
 }
 
 func (l *CustomLogger) Slow(a ...any) {
-    l.Log(LogOption{Level: WARN, LevelTag: "slow", CallerSkip: 1}, a...)
+    l.Log(Record{Level: WARN, LevelTag: "slow", CallerSkip: 1, MsgArgs: a})
 }
 
 func (l *CustomLogger) Stat(a ...any) {
-    l.Log(LogOption{Level: INFO, LevelTag: "stat", CallerSkip: 1}, a...)
+    l.Log(Record{Level: INFO, LevelTag: "stat", CallerSkip: 1, MsgArgs: a})
 }
 
 func (l *CustomLogger) Debug(a ...any) {
-    l.Log(LogOption{Level: DEBUG, CallerSkip: 1, EnableCaller: EnableOpen}, a...)
+    l.Log(Record{Level: DEBUG, CallerSkip: 1, Caller: Enable, MsgArgs: a})
 }
 ```
 

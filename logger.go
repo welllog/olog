@@ -5,15 +5,22 @@ import (
 	"time"
 )
 
+// defCallerSkip is the default number of stack frames to skip to find the caller information.
+const defCallerSkip = 5
+
+// defStackSize is the default maximum number of stack frames to include in the log message.
+const defStackSize = 5
+
 // logger represents a logger instance with configurable options
 type logger struct {
-	appName      string     // the name of the application
-	level        Level      // the minimum level of logging to output
-	enableCaller bool       // flag indicating whether to log the caller information
-	enableColor  bool       // flag indicating whether to use colorized output for levelTag on plain encoding
-	encodeType   EncodeType // the encoding type to use for encoding the log message
-	timeFormat   string     // time format to use for logging
-	writer       Writer     // writer to output log to
+	app     string     // the name of the application
+	level   Level      // the minimum level of logging to output
+	caller  EnableOp   // flag indicating whether to log the caller information
+	color   EnableOp   // flag indicating whether to use colorized output for levelTag on plain encoding
+	encType EncodeType // the encoding type to use for encoding the log message
+	timeFmt string     // time format to use for logging
+	enc     Encoder    // enc to use for encoding the log message
+	wr      Writer     // wr to output log to
 }
 
 // NewLogger returns a new Logger instance with optional configurations
@@ -24,11 +31,11 @@ func NewLogger(opts ...LoggerOption) Logger {
 // newLogger creates a new logger instance with default options that can be customized with the provided options
 func newLogger(opts ...LoggerOption) *logger {
 	l := logger{
-		enableCaller: true,
-		enableColor:  true,
-		timeFormat:   time.RFC3339,
-		encodeType:   JSON,
-		writer:       csWriter,
+		caller:  Enable,
+		color:   Enable,
+		encType: JSON,
+		timeFmt: time.RFC3339,
+		wr:      csWriter,
 	}
 	for _, opt := range opts {
 		opt(&l)
@@ -42,7 +49,7 @@ type LoggerOption func(*logger)
 // WithLoggerAppName sets the name of the application
 func WithLoggerAppName(name string) LoggerOption {
 	return func(l *logger) {
-		l.appName = name
+		l.app = name
 	}
 }
 
@@ -56,44 +63,61 @@ func WithLoggerLevel(level Level) LoggerOption {
 // WithLoggerCaller sets whether to log the caller information in the output
 func WithLoggerCaller(enable bool) LoggerOption {
 	return func(l *logger) {
-		l.enableCaller = enable
+		if enable {
+			l.caller = Enable
+		} else {
+			l.caller = Disable
+		}
 	}
 }
 
 // WithLoggerColor sets whether to use colorized output for levelTag on plain encoding, not supporting windows.
 func WithLoggerColor(enable bool) LoggerOption {
 	return func(l *logger) {
-		l.enableColor = enable
+		if enable {
+			l.color = Enable
+		} else {
+			l.color = Disable
+		}
 	}
 }
 
 // WithLoggerTimeFormat sets the time format to use for logging
 func WithLoggerTimeFormat(format string) LoggerOption {
 	return func(l *logger) {
-		l.timeFormat = format
+		l.timeFmt = format
 	}
 }
 
 // WithLoggerEncode sets the encoding type to use for logging
 func WithLoggerEncode(e EncodeType) LoggerOption {
 	return func(l *logger) {
-		l.encodeType = e
+		switch e {
+		case PLAIN, JSON:
+			l.encType = e
+		default:
+			l.encType = JSON
+		}
+	}
+}
+
+// WithLoggerEncoder sets the encoder to use for logging
+func WithLoggerEncoder(e Encoder) LoggerOption {
+	return func(l *logger) {
+		l.enc = e
+		l.encType = -1
 	}
 }
 
 // WithLoggerWriter sets the output writer for the logger instance
 func WithLoggerWriter(w Writer) LoggerOption {
 	return func(l *logger) {
-		l.writer = w
+		l.wr = w
 	}
 }
 
-func (l *logger) Log(op LogOption, a ...any) {
-	l.log(op, a...)
-}
-
-func (l *logger) Logf(op LogOption, format string, a ...any) {
-	l.logf(op, format, a...)
+func (l *logger) Log(r Record) {
+	l.log(r)
 }
 
 func (l *logger) Fatal(a ...any) {
@@ -184,321 +208,228 @@ func (l *logger) IsEnabled(level Level) bool {
 	return level >= l.level
 }
 
-func (l *logger) log(op LogOption, a ...any) {
-	if l.IsEnabled(op.Level) {
-		if op.StackSize == 0 {
-			op.StackSize = defStackSize
-		}
-		o := logOption{
-			level:        op.Level,
-			enableCaller: l.enableCaller,
-			stackSize:    op.StackSize,
-			callerSkip:   defCallerSkip + op.CallerSkip,
-			msgType:      msgTypePrint,
-			msgArgs:      a,
-			tag:          op.LevelTag,
-			fields:       op.Fields,
+func (l *logger) log(r Record) {
+	if l.IsEnabled(r.Level) {
+		if r.Stack == Default {
+			r.Stack = Disable
 		}
 
-		if op.EnableCaller != EnableDefault {
-			o.enableCaller = op.EnableCaller == EnableOpen
+		if r.StackSize == 0 {
+			r.StackSize = defStackSize
 		}
 
-		if op.EnableStack != EnableDefault {
-			o.enableStack = op.EnableStack == EnableOpen
-		}
+		r.CallerSkip = defCallerSkip + r.CallerSkip
 
-		l.output(&o)
+		l.output(r)
 	}
 
-	if op.Level == FATAL {
-		os.Exit(1)
-	}
-}
-
-func (l *logger) logf(op LogOption, format string, a ...any) {
-	if l.IsEnabled(op.Level) {
-		if op.StackSize == 0 {
-			op.StackSize = defStackSize
-		}
-		o := logOption{
-			level:        op.Level,
-			enableCaller: l.enableCaller,
-			stackSize:    op.StackSize,
-			callerSkip:   defCallerSkip + op.CallerSkip,
-			tag:          op.LevelTag,
-			fields:       op.Fields,
-		}
-
-		if op.EnableCaller != EnableDefault {
-			o.enableCaller = op.EnableCaller == EnableOpen
-		}
-
-		if op.EnableStack != EnableDefault {
-			o.enableStack = op.EnableStack == EnableOpen
-		}
-
-		if len(a) > 0 {
-			o.msgType = msgTypePrintf
-			o.msgOrFormat = format
-			o.msgArgs = a
-		} else {
-			o.msgType = msgTypePrintMsg
-			o.msgOrFormat = format
-		}
-
-		l.output(&o)
-	}
-
-	if op.Level == FATAL {
+	if r.Level == FATAL {
 		os.Exit(1)
 	}
 }
 
 func (l *logger) fatal(a ...any) {
-	l.output(&logOption{
-		level:        FATAL,
-		enableCaller: l.enableCaller,
-		msgType:      msgTypePrint,
-		msgArgs:      a,
+	l.output(Record{
+		Level:   FATAL,
+		MsgArgs: a,
 	})
 	os.Exit(1)
 }
 
 func (l *logger) fatalf(format string, a ...any) {
-	l.output(&logOption{
-		level:        FATAL,
-		enableCaller: l.enableCaller,
-		msgType:      msgTypePrintf,
-		msgArgs:      a,
-		msgOrFormat:  format,
+	l.output(Record{
+		Level:       FATAL,
+		MsgOrFormat: format,
+		MsgArgs:     a,
 	})
 	os.Exit(1)
 }
 
 func (l *logger) fatalw(msg string, fields ...Field) {
-	l.output(&logOption{
-		level:        FATAL,
-		enableCaller: l.enableCaller,
-		msgType:      msgTypePrintMsg,
-		msgOrFormat:  msg,
-		fields:       fields,
+	l.output(Record{
+		Level:       FATAL,
+		MsgOrFormat: msg,
+		Fields:      fields,
 	})
 	os.Exit(1)
 }
 
 func (l *logger) error(a ...any) {
 	if l.IsEnabled(ERROR) {
-		l.output(&logOption{
-			level:        ERROR,
-			enableCaller: l.enableCaller,
-			msgType:      msgTypePrint,
-			msgArgs:      a,
+		l.output(Record{
+			Level:   ERROR,
+			MsgArgs: a,
 		})
 	}
 }
 
 func (l *logger) errorf(format string, a ...any) {
 	if l.IsEnabled(ERROR) {
-		l.output(&logOption{
-			level:        ERROR,
-			enableCaller: l.enableCaller,
-			msgType:      msgTypePrintf,
-			msgArgs:      a,
-			msgOrFormat:  format,
+		l.output(Record{
+			Level:       ERROR,
+			MsgOrFormat: format,
+			MsgArgs:     a,
 		})
 	}
 }
 
 func (l *logger) errorw(msg string, fields ...Field) {
 	if l.IsEnabled(ERROR) {
-		l.output(&logOption{
-			level:        ERROR,
-			enableCaller: l.enableCaller,
-			msgType:      msgTypePrintMsg,
-			msgOrFormat:  msg,
-			fields:       fields,
+		l.output(Record{
+			Level:       ERROR,
+			MsgOrFormat: msg,
+			Fields:      fields,
 		})
 	}
 }
 
 func (l *logger) warn(a ...any) {
 	if l.IsEnabled(WARN) {
-		l.output(&logOption{
-			level:        WARN,
-			enableCaller: l.enableCaller,
-			msgType:      msgTypePrint,
-			msgArgs:      a,
+		l.output(Record{
+			Level:   WARN,
+			MsgArgs: a,
 		})
 	}
 }
 
 func (l *logger) warnf(format string, a ...any) {
 	if l.IsEnabled(WARN) {
-		l.output(&logOption{
-			level:        WARN,
-			enableCaller: l.enableCaller,
-			msgType:      msgTypePrintf,
-			msgArgs:      a,
-			msgOrFormat:  format,
+		l.output(Record{
+			Level:       WARN,
+			MsgOrFormat: format,
+			MsgArgs:     a,
 		})
 	}
 }
 
 func (l *logger) warnw(msg string, fields ...Field) {
 	if l.IsEnabled(WARN) {
-		l.output(&logOption{
-			level:        WARN,
-			enableCaller: l.enableCaller,
-			msgType:      msgTypePrintMsg,
-			msgOrFormat:  msg,
-			fields:       fields,
+		l.output(Record{
+			Level:       WARN,
+			MsgOrFormat: msg,
+			Fields:      fields,
 		})
 	}
 }
 
 func (l *logger) notice(a ...any) {
 	if l.IsEnabled(NOTICE) {
-		l.output(&logOption{
-			level:        NOTICE,
-			enableCaller: l.enableCaller,
-			msgType:      msgTypePrint,
-			msgArgs:      a,
+		l.output(Record{
+			Level:   NOTICE,
+			MsgArgs: a,
 		})
 	}
 }
 
 func (l *logger) noticef(format string, a ...any) {
 	if l.IsEnabled(NOTICE) {
-		l.output(&logOption{
-			level:        NOTICE,
-			enableCaller: l.enableCaller,
-			msgType:      msgTypePrintf,
-			msgArgs:      a,
-			msgOrFormat:  format,
+		l.output(Record{
+			Level:       NOTICE,
+			MsgOrFormat: format,
+			MsgArgs:     a,
 		})
 	}
 }
 
 func (l *logger) noticew(msg string, fields ...Field) {
 	if l.IsEnabled(NOTICE) {
-		l.output(&logOption{
-			level:        NOTICE,
-			enableCaller: l.enableCaller,
-			msgType:      msgTypePrintMsg,
-			msgOrFormat:  msg,
-			fields:       fields,
+		l.output(Record{
+			Level:       NOTICE,
+			MsgOrFormat: msg,
+			Fields:      fields,
 		})
 	}
 }
 
 func (l *logger) info(a ...any) {
 	if l.IsEnabled(INFO) {
-		l.output(&logOption{
-			level:        INFO,
-			enableCaller: l.enableCaller,
-			msgType:      msgTypePrint,
-			msgArgs:      a,
+		l.output(Record{
+			Level:   INFO,
+			MsgArgs: a,
 		})
 	}
 }
 
 func (l *logger) infof(format string, a ...any) {
 	if l.IsEnabled(INFO) {
-		l.output(&logOption{
-			level:        INFO,
-			enableCaller: l.enableCaller,
-			msgType:      msgTypePrintf,
-			msgArgs:      a,
-			msgOrFormat:  format,
+		l.output(Record{
+			Level:       INFO,
+			MsgOrFormat: format,
+			MsgArgs:     a,
 		})
 	}
 }
 
 func (l *logger) infow(msg string, fields ...Field) {
 	if l.IsEnabled(INFO) {
-		l.output(&logOption{
-			level:        INFO,
-			enableCaller: l.enableCaller,
-			msgType:      msgTypePrintMsg,
-			msgOrFormat:  msg,
-			fields:       fields,
+		l.output(Record{
+			Level:       INFO,
+			MsgOrFormat: msg,
+			Fields:      fields,
 		})
 	}
 }
 
 func (l *logger) debug(a ...any) {
 	if l.IsEnabled(DEBUG) {
-		l.output(&logOption{
-			level:        DEBUG,
-			enableCaller: l.enableCaller,
-			msgType:      msgTypePrint,
-			msgArgs:      a,
+		l.output(Record{
+			Level:   DEBUG,
+			MsgArgs: a,
 		})
 	}
 }
 
 func (l *logger) debugf(format string, a ...any) {
 	if l.IsEnabled(DEBUG) {
-		l.output(&logOption{
-			level:        DEBUG,
-			enableCaller: l.enableCaller,
-			msgType:      msgTypePrintf,
-			msgArgs:      a,
-			msgOrFormat:  format,
+		l.output(Record{
+			Level:       DEBUG,
+			MsgOrFormat: format,
+			MsgArgs:     a,
 		})
 	}
 }
 
 func (l *logger) debugw(msg string, fields ...Field) {
 	if l.IsEnabled(DEBUG) {
-		l.output(&logOption{
-			level:        DEBUG,
-			enableCaller: l.enableCaller,
-			msgType:      msgTypePrintMsg,
-			msgOrFormat:  msg,
-			fields:       fields,
+		l.output(Record{
+			Level:       DEBUG,
+			MsgOrFormat: msg,
+			Fields:      fields,
 		})
 	}
 }
 
 func (l *logger) trace(a ...any) {
 	if l.IsEnabled(TRACE) {
-		l.output(&logOption{
-			level:        TRACE,
-			enableCaller: l.enableCaller,
-			enableStack:  true,
-			stackSize:    defStackSize,
-			msgType:      msgTypePrint,
-			msgArgs:      a,
+		l.output(Record{
+			Level:     TRACE,
+			Stack:     Enable,
+			StackSize: defStackSize,
+			MsgArgs:   a,
 		})
 	}
 }
 
 func (l *logger) tracef(format string, a ...any) {
 	if l.IsEnabled(TRACE) {
-		l.output(&logOption{
-			level:        TRACE,
-			enableCaller: l.enableCaller,
-			enableStack:  true,
-			stackSize:    defStackSize,
-			msgType:      msgTypePrintf,
-			msgArgs:      a,
-			msgOrFormat:  format,
+		l.output(Record{
+			Level:       TRACE,
+			Stack:       Enable,
+			StackSize:   defStackSize,
+			MsgOrFormat: format,
+			MsgArgs:     a,
 		})
 	}
 }
 
 func (l *logger) tracew(msg string, fields ...Field) {
 	if l.IsEnabled(TRACE) {
-		l.output(&logOption{
-			level:        TRACE,
-			enableCaller: l.enableCaller,
-			enableStack:  true,
-			stackSize:    defStackSize,
-			msgType:      msgTypePrintMsg,
-			msgOrFormat:  msg,
-			fields:       fields,
+		l.output(Record{
+			Level:       TRACE,
+			Stack:       Enable,
+			StackSize:   defStackSize,
+			MsgOrFormat: msg,
+			Fields:      fields,
 		})
 	}
 }
@@ -507,56 +438,46 @@ func (l *logger) buildFields(fields ...Field) []Field {
 	return fields
 }
 
-func (l *logger) output(o *logOption) {
-	if o.tag == "" {
-		o.tag = o.level.String()
+func (l *logger) output(r Record) {
+	if r.Caller == Default {
+		r.Caller = l.caller
 	}
 
-	if o.callerSkip <= 0 {
-		o.callerSkip = defCallerSkip
+	if r.CallerSkip <= 0 {
+		r.CallerSkip = defCallerSkip
 	}
 
-	o.fields = l.filterFields(o.fields)
-	o.appName = l.appName
-	o.enableColor = l.enableColor
-	o.timeFormat = l.timeFormat
-	if l.encodeType == PLAIN {
-		plainEncode(o, l.writer)
-	} else {
-		jsonEncode(o, l.writer)
-	}
-}
-
-func (l *logger) filterFields(fields []Field) []Field {
-	n := len(fields)
-	if n == 0 {
-		return fields
+	if r.LevelTag == "" {
+		r.LevelTag = r.Level.String()
 	}
 
-	set := make(map[string]struct{}, n)
-	var remain int
-	for idx, field := range fields {
-		_, ok := filterField[field.Key]
-		if !ok {
-			_, ok = set[field.Key]
-			if !ok {
-				set[field.Key] = struct{}{}
-				fields[remain], fields[idx] = fields[idx], fields[remain]
-				remain++
-			}
-		}
+	if r.App == "" {
+		r.App = l.app
 	}
-	return fields[:remain]
+
+	if r.TimeFmt == "" {
+		r.TimeFmt = l.timeFmt
+	}
+
+	switch l.encType {
+	case PLAIN:
+		plainEncode(r, l.wr, l.color.IsOpen())
+	case -1:
+		l.enc(r, l.wr)
+	default:
+		jsonEncode(r, l.wr)
+	}
 }
 
 func (l *logger) clone() *logger {
 	return &logger{
-		appName:      l.appName,
-		level:        l.level,
-		enableCaller: l.enableCaller,
-		enableColor:  l.enableColor,
-		encodeType:   l.encodeType,
-		timeFormat:   l.timeFormat,
-		writer:       l.writer,
+		app:     l.app,
+		level:   l.level,
+		caller:  l.caller,
+		color:   l.color,
+		encType: l.encType,
+		timeFmt: l.timeFmt,
+		enc:     l.enc,
+		wr:      l.wr,
 	}
 }

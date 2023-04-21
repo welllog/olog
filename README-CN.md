@@ -4,7 +4,7 @@
 
 # olog
 * olog是一个轻量级、高性能、开箱即用的日志库，完全依赖于Go标准库。
-* 支持以JSON和纯文本格式输出日志。
+* 支持以JSON、纯文本以及自定义格式输出日志。
 * 支持设置上下文处理函数，以从上下文中检索字段以进行输出。
 * 支持七个日志级别：TRACE、DEBUG、INFO、NOTICE、WARN、ERROR和FATAL，对应于“trace”、“debug”、“info”、“notice”、“warn”、“error”和“fatal”标签。用户还可以定义自己的语义标签，如“slow”和“stat”。
 * 提供输出开关控制，除了FATAL之外的所有日志级别都可以控制输出。
@@ -21,10 +21,8 @@
     Warnf("hello %s", "world")
     Warnw("hello", Field{Key: "order_no", Value: "AWESDDF"})
     Errorw("hello world", Field{Key: "success", Value: true})
-    Logf(LogOption{Level: DEBUG, LevelTag: "print", EnableCaller: EnableClose,
-        Fields: []Field{{Key: "price", Value: 32.5}},
-        EnableStack: EnableOpen, StackSize: 1},
-        "hello world")
+    Log(Record{Level: DEBUG, LevelTag: "print", Caller: Disable, Fields: []Field{{Key: "price", Value: 32.5}},
+        Stack: Enable, StackSize: 1, MsgOrFormat: "hello world"})
     Fatal("fatal exit")
 ```
 json输出如下：
@@ -98,15 +96,15 @@ type CustomLogger struct {
 }
 
 func (l *CustomLogger) Slow(a ...any) {
-    l.Log(LogOption{Level: WARN, LevelTag: "slow", CallerSkip: 1}, a...)
+    l.Log(Record{Level: WARN, LevelTag: "slow", CallerSkip: 1, MsgArgs: a})
 }
 
 func (l *CustomLogger) Stat(a ...any) {
-    l.Log(LogOption{Level: INFO, LevelTag: "stat", CallerSkip: 1}, a...)
+    l.Log(Record{Level: INFO, LevelTag: "stat", CallerSkip: 1, MsgArgs: a})
 }
 
 func (l *CustomLogger) Debug(a ...any) {
-    l.Log(LogOption{Level: DEBUG, CallerSkip: 1, EnableCaller: EnableOpen}, a...)
+    l.Log(Record{Level: DEBUG, CallerSkip: 1, Caller: Enable, MsgArgs: a})
 }
 ```
 
