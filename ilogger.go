@@ -72,6 +72,7 @@ type Record struct {
 	Stack       EnableOp // Stack is the enable of stack trace information in the log message.
 	StackSize   uint8    // StackSize is the maximum number of stack frames to include in the log message.
 	CallerSkip  int8     // CallerSkip is the number of stack frames to skip to find the caller information.
+	OsExit      bool     // OsExit is the enable of os.Exit(1) in the log message.
 	MsgOrFormat string   // MsgOrFormat is the string representation of the log message
 	MsgArgs     []any    // MsgArgs is the arguments of the log message
 	Fields      []Field  // Fields is a slice of key-value pairs of additional data to include in the log message.

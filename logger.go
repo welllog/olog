@@ -222,18 +222,14 @@ func (l *logger) log(r Record) {
 
 		l.output(r)
 	}
-
-	if r.Level == FATAL {
-		os.Exit(1)
-	}
 }
 
 func (l *logger) fatal(a ...any) {
 	l.output(Record{
 		Level:   FATAL,
 		MsgArgs: a,
+		OsExit:  true,
 	})
-	os.Exit(1)
 }
 
 func (l *logger) fatalf(format string, a ...any) {
@@ -241,8 +237,8 @@ func (l *logger) fatalf(format string, a ...any) {
 		Level:       FATAL,
 		MsgOrFormat: format,
 		MsgArgs:     a,
+		OsExit:      true,
 	})
-	os.Exit(1)
 }
 
 func (l *logger) fatalw(msg string, fields ...Field) {
@@ -250,8 +246,8 @@ func (l *logger) fatalw(msg string, fields ...Field) {
 		Level:       FATAL,
 		MsgOrFormat: msg,
 		Fields:      fields,
+		OsExit:      true,
 	})
-	os.Exit(1)
 }
 
 func (l *logger) error(a ...any) {
@@ -466,6 +462,10 @@ func (l *logger) output(r Record) {
 		l.enc(r, l.wr)
 	default:
 		jsonEncode(r, l.wr)
+	}
+
+	if r.OsExit {
+		os.Exit(1)
 	}
 }
 

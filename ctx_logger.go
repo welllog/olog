@@ -51,6 +51,7 @@ func (c *ctxLogger) Fatal(a ...any) {
 			Level:   FATAL,
 			MsgArgs: a,
 			Fields:  c.buildFields(),
+			OsExit:  true,
 		})
 	}
 }
@@ -62,6 +63,7 @@ func (c *ctxLogger) Fatalf(format string, a ...any) {
 			MsgOrFormat: format,
 			MsgArgs:     a,
 			Fields:      c.buildFields(),
+			OsExit:      true,
 		})
 	}
 }
@@ -72,6 +74,7 @@ func (c *ctxLogger) Fatalw(msg string, fields ...Field) {
 			Level:       FATAL,
 			MsgOrFormat: msg,
 			Fields:      c.buildFields(fields...),
+			OsExit:      true,
 		})
 	}
 }
