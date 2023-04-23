@@ -112,16 +112,16 @@ func (b *Buffer) WriteInt64(n int64) {
 }
 
 func (b *Buffer) WriteSprint(args ...any) {
-	b.buf = fmt.Append(b.buf, args...)
+	_, _ = fmt.Fprint(b, args...)
 }
 
 func (b *Buffer) WriteSprintf(format string, args ...any) {
-	b.buf = fmt.Appendf(b.buf, format, args...)
+	_, _ = fmt.Fprintf(b, format, args...)
 }
 
 func (b *Buffer) WriteQuoteSprint(args ...any) {
 	l := len(b.buf)
-	b.buf = fmt.Append(b.buf, args...)
+	_, _ = fmt.Fprint(b, args...)
 	s := string(b.buf[l:])
 	b.buf = b.buf[:l]
 	b.WriteQuoteString(s)
@@ -129,7 +129,7 @@ func (b *Buffer) WriteQuoteSprint(args ...any) {
 
 func (b *Buffer) WriteQuoteSprintf(format string, args ...any) {
 	l := len(b.buf)
-	b.buf = fmt.Appendf(b.buf, format, args...)
+	_, _ = fmt.Fprintf(b, format, args...)
 	s := string(b.buf[l:])
 	b.buf = b.buf[:l]
 	b.WriteQuoteString(s)
