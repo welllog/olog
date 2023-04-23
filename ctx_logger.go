@@ -8,7 +8,7 @@ import (
 type ctxLogger struct {
 	Logger
 	ctx       context.Context
-	entries   map[string]any
+	entries   map[string]interface{}
 	ctxHandle CtxHandle
 }
 
@@ -29,7 +29,7 @@ func WithContext(logger Logger, ctx context.Context, handles ...CtxHandle) Logge
 }
 
 // WithEntries creates a new logger with the provided entries and an empty context.
-func WithEntries(logger Logger, entries map[string]any) Logger {
+func WithEntries(logger Logger, entries map[string]interface{}) Logger {
 	return &ctxLogger{
 		Logger:    logger,
 		ctx:       context.Background(),
@@ -45,7 +45,7 @@ func (c *ctxLogger) Log(r Record) {
 	}
 }
 
-func (c *ctxLogger) Fatal(a ...any) {
+func (c *ctxLogger) Fatal(a ...interface{}) {
 	if c.IsEnabled(FATAL) {
 		c.log(Record{
 			Level:   FATAL,
@@ -56,7 +56,7 @@ func (c *ctxLogger) Fatal(a ...any) {
 	}
 }
 
-func (c *ctxLogger) Fatalf(format string, a ...any) {
+func (c *ctxLogger) Fatalf(format string, a ...interface{}) {
 	if c.IsEnabled(FATAL) {
 		c.log(Record{
 			Level:       FATAL,
@@ -79,7 +79,7 @@ func (c *ctxLogger) Fatalw(msg string, fields ...Field) {
 	}
 }
 
-func (c *ctxLogger) Error(a ...any) {
+func (c *ctxLogger) Error(a ...interface{}) {
 	if c.IsEnabled(ERROR) {
 		c.log(Record{
 			Level:   ERROR,
@@ -89,7 +89,7 @@ func (c *ctxLogger) Error(a ...any) {
 	}
 }
 
-func (c *ctxLogger) Errorf(format string, a ...any) {
+func (c *ctxLogger) Errorf(format string, a ...interface{}) {
 	if c.IsEnabled(ERROR) {
 		c.log(Record{
 			Level:       ERROR,
@@ -110,7 +110,7 @@ func (c *ctxLogger) Errorw(msg string, fields ...Field) {
 	}
 }
 
-func (c *ctxLogger) Warn(a ...any) {
+func (c *ctxLogger) Warn(a ...interface{}) {
 	if c.IsEnabled(WARN) {
 		c.log(Record{
 			Level:   WARN,
@@ -120,7 +120,7 @@ func (c *ctxLogger) Warn(a ...any) {
 	}
 }
 
-func (c *ctxLogger) Warnf(format string, a ...any) {
+func (c *ctxLogger) Warnf(format string, a ...interface{}) {
 	if c.IsEnabled(WARN) {
 		c.log(Record{
 			Level:       WARN,
@@ -141,7 +141,7 @@ func (c *ctxLogger) Warnw(msg string, fields ...Field) {
 	}
 }
 
-func (c *ctxLogger) Notice(a ...any) {
+func (c *ctxLogger) Notice(a ...interface{}) {
 	if c.IsEnabled(NOTICE) {
 		c.log(Record{
 			Level:   NOTICE,
@@ -151,7 +151,7 @@ func (c *ctxLogger) Notice(a ...any) {
 	}
 }
 
-func (c *ctxLogger) Noticef(format string, a ...any) {
+func (c *ctxLogger) Noticef(format string, a ...interface{}) {
 	if c.IsEnabled(NOTICE) {
 		c.log(Record{
 			Level:       NOTICE,
@@ -172,7 +172,7 @@ func (c *ctxLogger) Noticew(msg string, fields ...Field) {
 	}
 }
 
-func (c *ctxLogger) Info(a ...any) {
+func (c *ctxLogger) Info(a ...interface{}) {
 	if c.IsEnabled(INFO) {
 		c.log(Record{
 			Level:   INFO,
@@ -182,7 +182,7 @@ func (c *ctxLogger) Info(a ...any) {
 	}
 }
 
-func (c *ctxLogger) Infof(format string, a ...any) {
+func (c *ctxLogger) Infof(format string, a ...interface{}) {
 	if c.IsEnabled(INFO) {
 		c.log(Record{
 			Level:       INFO,
@@ -203,7 +203,7 @@ func (c *ctxLogger) Infow(msg string, fields ...Field) {
 	}
 }
 
-func (c *ctxLogger) Debug(a ...any) {
+func (c *ctxLogger) Debug(a ...interface{}) {
 	if c.IsEnabled(DEBUG) {
 		c.log(Record{
 			Level:   DEBUG,
@@ -213,7 +213,7 @@ func (c *ctxLogger) Debug(a ...any) {
 	}
 }
 
-func (c *ctxLogger) Debugf(format string, a ...any) {
+func (c *ctxLogger) Debugf(format string, a ...interface{}) {
 	if c.IsEnabled(DEBUG) {
 		c.log(Record{
 			Level:       DEBUG,
@@ -234,7 +234,7 @@ func (c *ctxLogger) Debugw(msg string, fields ...Field) {
 	}
 }
 
-func (c *ctxLogger) Trace(a ...any) {
+func (c *ctxLogger) Trace(a ...interface{}) {
 	if c.IsEnabled(TRACE) {
 		c.log(Record{
 			Level:   TRACE,
@@ -245,7 +245,7 @@ func (c *ctxLogger) Trace(a ...any) {
 	}
 }
 
-func (c *ctxLogger) Tracef(format string, a ...any) {
+func (c *ctxLogger) Tracef(format string, a ...interface{}) {
 	if c.IsEnabled(TRACE) {
 		c.log(Record{
 			Level:       TRACE,

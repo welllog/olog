@@ -1,3 +1,3 @@
 module github.com/welllog/olog
 
-go 1.20
+go 1.12

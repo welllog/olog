@@ -14,7 +14,7 @@ func TestLogCaller(t *testing.T) {
 	SetEncode(JSON)
 	SetLevel(TRACE)
 
-	Log(Record{Level: DEBUG, MsgOrFormat: "hello %s", MsgArgs: []any{"world"}})
+	Log(Record{Level: DEBUG, MsgOrFormat: "hello %s", MsgArgs: []interface{}{"world"}})
 	Error("hello")
 	Errorf("hello %s", "world")
 	Errorw("hello")
@@ -108,9 +108,9 @@ func validCaller(buf *bytes.Buffer, file string, startLine int) error {
 		if len(line) == 0 {
 			break
 		}
-		m := make(map[string]any)
+		m := make(map[string]interface{})
 		if err := json.Unmarshal(line, &m); err != nil {
-			return fmt.Errorf("unmarshal data %s err: %w", string(line), err)
+			return fmt.Errorf("unmarshal data %s err: %s", string(line), err.Error())
 		}
 		want := fmt.Sprintf("%s:%d", file, startLine)
 		if m[fieldCaller] != want {

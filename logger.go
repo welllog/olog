@@ -120,11 +120,11 @@ func (l *logger) Log(r Record) {
 	l.log(r)
 }
 
-func (l *logger) Fatal(a ...any) {
+func (l *logger) Fatal(a ...interface{}) {
 	l.fatal(a...)
 }
 
-func (l *logger) Fatalf(format string, a ...any) {
+func (l *logger) Fatalf(format string, a ...interface{}) {
 	l.fatalf(format, a...)
 }
 
@@ -132,11 +132,11 @@ func (l *logger) Fatalw(msg string, fields ...Field) {
 	l.fatalw(msg, fields...)
 }
 
-func (l *logger) Error(a ...any) {
+func (l *logger) Error(a ...interface{}) {
 	l.error(a...)
 }
 
-func (l *logger) Errorf(format string, a ...any) {
+func (l *logger) Errorf(format string, a ...interface{}) {
 	l.errorf(format, a...)
 }
 
@@ -144,11 +144,11 @@ func (l *logger) Errorw(msg string, fields ...Field) {
 	l.errorw(msg, fields...)
 }
 
-func (l *logger) Warn(a ...any) {
+func (l *logger) Warn(a ...interface{}) {
 	l.warn(a...)
 }
 
-func (l *logger) Warnf(format string, a ...any) {
+func (l *logger) Warnf(format string, a ...interface{}) {
 	l.warnf(format, a...)
 }
 
@@ -156,11 +156,11 @@ func (l *logger) Warnw(msg string, fields ...Field) {
 	l.warnw(msg, fields...)
 }
 
-func (l *logger) Notice(a ...any) {
+func (l *logger) Notice(a ...interface{}) {
 	l.notice(a...)
 }
 
-func (l *logger) Noticef(format string, a ...any) {
+func (l *logger) Noticef(format string, a ...interface{}) {
 	l.noticef(format, a...)
 }
 
@@ -168,11 +168,11 @@ func (l *logger) Noticew(msg string, fields ...Field) {
 	l.noticew(msg, fields...)
 }
 
-func (l *logger) Info(a ...any) {
+func (l *logger) Info(a ...interface{}) {
 	l.info(a...)
 }
 
-func (l *logger) Infof(format string, a ...any) {
+func (l *logger) Infof(format string, a ...interface{}) {
 	l.infof(format, a...)
 }
 
@@ -180,11 +180,11 @@ func (l *logger) Infow(msg string, fields ...Field) {
 	l.infow(msg, fields...)
 }
 
-func (l *logger) Debug(a ...any) {
+func (l *logger) Debug(a ...interface{}) {
 	l.debug(a...)
 }
 
-func (l *logger) Debugf(format string, a ...any) {
+func (l *logger) Debugf(format string, a ...interface{}) {
 	l.debugf(format, a...)
 }
 
@@ -192,11 +192,11 @@ func (l *logger) Debugw(msg string, fields ...Field) {
 	l.debugw(msg, fields...)
 }
 
-func (l *logger) Trace(a ...any) {
+func (l *logger) Trace(a ...interface{}) {
 	l.trace(a...)
 }
 
-func (l *logger) Tracef(format string, a ...any) {
+func (l *logger) Tracef(format string, a ...interface{}) {
 	l.tracef(format, a...)
 }
 
@@ -224,7 +224,7 @@ func (l *logger) log(r Record) {
 	}
 }
 
-func (l *logger) fatal(a ...any) {
+func (l *logger) fatal(a ...interface{}) {
 	l.output(Record{
 		Level:   FATAL,
 		MsgArgs: a,
@@ -232,7 +232,7 @@ func (l *logger) fatal(a ...any) {
 	})
 }
 
-func (l *logger) fatalf(format string, a ...any) {
+func (l *logger) fatalf(format string, a ...interface{}) {
 	l.output(Record{
 		Level:       FATAL,
 		MsgOrFormat: format,
@@ -250,7 +250,7 @@ func (l *logger) fatalw(msg string, fields ...Field) {
 	})
 }
 
-func (l *logger) error(a ...any) {
+func (l *logger) error(a ...interface{}) {
 	if l.IsEnabled(ERROR) {
 		l.output(Record{
 			Level:   ERROR,
@@ -259,7 +259,7 @@ func (l *logger) error(a ...any) {
 	}
 }
 
-func (l *logger) errorf(format string, a ...any) {
+func (l *logger) errorf(format string, a ...interface{}) {
 	if l.IsEnabled(ERROR) {
 		l.output(Record{
 			Level:       ERROR,
@@ -279,7 +279,7 @@ func (l *logger) errorw(msg string, fields ...Field) {
 	}
 }
 
-func (l *logger) warn(a ...any) {
+func (l *logger) warn(a ...interface{}) {
 	if l.IsEnabled(WARN) {
 		l.output(Record{
 			Level:   WARN,
@@ -288,7 +288,7 @@ func (l *logger) warn(a ...any) {
 	}
 }
 
-func (l *logger) warnf(format string, a ...any) {
+func (l *logger) warnf(format string, a ...interface{}) {
 	if l.IsEnabled(WARN) {
 		l.output(Record{
 			Level:       WARN,
@@ -308,7 +308,7 @@ func (l *logger) warnw(msg string, fields ...Field) {
 	}
 }
 
-func (l *logger) notice(a ...any) {
+func (l *logger) notice(a ...interface{}) {
 	if l.IsEnabled(NOTICE) {
 		l.output(Record{
 			Level:   NOTICE,
@@ -317,7 +317,7 @@ func (l *logger) notice(a ...any) {
 	}
 }
 
-func (l *logger) noticef(format string, a ...any) {
+func (l *logger) noticef(format string, a ...interface{}) {
 	if l.IsEnabled(NOTICE) {
 		l.output(Record{
 			Level:       NOTICE,
@@ -337,7 +337,7 @@ func (l *logger) noticew(msg string, fields ...Field) {
 	}
 }
 
-func (l *logger) info(a ...any) {
+func (l *logger) info(a ...interface{}) {
 	if l.IsEnabled(INFO) {
 		l.output(Record{
 			Level:   INFO,
@@ -346,7 +346,7 @@ func (l *logger) info(a ...any) {
 	}
 }
 
-func (l *logger) infof(format string, a ...any) {
+func (l *logger) infof(format string, a ...interface{}) {
 	if l.IsEnabled(INFO) {
 		l.output(Record{
 			Level:       INFO,
@@ -366,7 +366,7 @@ func (l *logger) infow(msg string, fields ...Field) {
 	}
 }
 
-func (l *logger) debug(a ...any) {
+func (l *logger) debug(a ...interface{}) {
 	if l.IsEnabled(DEBUG) {
 		l.output(Record{
 			Level:   DEBUG,
@@ -375,7 +375,7 @@ func (l *logger) debug(a ...any) {
 	}
 }
 
-func (l *logger) debugf(format string, a ...any) {
+func (l *logger) debugf(format string, a ...interface{}) {
 	if l.IsEnabled(DEBUG) {
 		l.output(Record{
 			Level:       DEBUG,
@@ -395,7 +395,7 @@ func (l *logger) debugw(msg string, fields ...Field) {
 	}
 }
 
-func (l *logger) trace(a ...any) {
+func (l *logger) trace(a ...interface{}) {
 	if l.IsEnabled(TRACE) {
 		l.output(Record{
 			Level:     TRACE,
@@ -406,7 +406,7 @@ func (l *logger) trace(a ...any) {
 	}
 }
 
-func (l *logger) tracef(format string, a ...any) {
+func (l *logger) tracef(format string, a ...interface{}) {
 	if l.IsEnabled(TRACE) {
 		l.output(Record{
 			Level:       TRACE,

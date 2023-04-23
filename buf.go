@@ -19,7 +19,7 @@ const lowerhex = "0123456789abcdef"
 // Declare a new sync.Pool object, which allows for efficient
 // re-use of objects across goroutines.
 var bufPool = sync.Pool{
-	New: func() any {
+	New: func() interface{} {
 		var b [200]byte
 		return NewBuffer(b[:0])
 	},
@@ -99,8 +99,9 @@ func (b *Buffer) WriteRune(r rune) (n int, err error) {
 	if !ok {
 		m = b.grow(utf8.UTFMax)
 	}
-	b.buf = utf8.AppendRune(b.buf[:m], r)
-	return len(b.buf) - m, nil
+	n = utf8.EncodeRune(b.buf[m:m+utf8.UTFMax], r)
+	b.buf = b.buf[:m+n]
+	return n, nil
 }
 
 func (b *Buffer) WriteTime(t time.Time, layout string) {
@@ -111,31 +112,31 @@ func (b *Buffer) WriteInt64(n int64) {
 	b.buf = strconv.AppendInt(b.buf, n, 10)
 }
 
-func (b *Buffer) WriteSprint(args ...any) {
-	b.buf = fmt.Append(b.buf, args...)
+func (b *Buffer) WriteSprint(args ...interface{}) {
+	_, _ = fmt.Fprint(b, args...)
 }
 
-func (b *Buffer) WriteSprintf(format string, args ...any) {
-	b.buf = fmt.Appendf(b.buf, format, args...)
+func (b *Buffer) WriteSprintf(format string, args ...interface{}) {
+	_, _ = fmt.Fprintf(b, format, args...)
 }
 
-func (b *Buffer) WriteQuoteSprint(args ...any) {
+func (b *Buffer) WriteQuoteSprint(args ...interface{}) {
 	l := len(b.buf)
-	b.buf = fmt.Append(b.buf, args...)
+	_, _ = fmt.Fprint(b, args...)
 	s := string(b.buf[l:])
 	b.buf = b.buf[:l]
 	b.WriteQuoteString(s)
 }
 
-func (b *Buffer) WriteQuoteSprintf(format string, args ...any) {
+func (b *Buffer) WriteQuoteSprintf(format string, args ...interface{}) {
 	l := len(b.buf)
-	b.buf = fmt.Appendf(b.buf, format, args...)
+	_, _ = fmt.Fprintf(b, format, args...)
 	s := string(b.buf[l:])
 	b.buf = b.buf[:l]
 	b.WriteQuoteString(s)
 }
 
-func (b *Buffer) WriteAny(value any, quoteStr bool) {
+func (b *Buffer) WriteAny(value interface{}, quoteStr bool) {
 	switch v := value.(type) {
 	case string:
 		if quoteStr {

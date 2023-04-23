@@ -239,7 +239,7 @@ func TestWithContext(t *testing.T) {
 	l = WithContext(l, context.Background())
 	l.Debug("test 3")
 
-	l = WithEntries(l, map[string]any{
+	l = WithEntries(l, map[string]interface{}{
 		"ip":      "127.0.0.1",
 		"score":   99.9,
 		"success": true,

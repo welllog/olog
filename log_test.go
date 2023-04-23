@@ -23,7 +23,7 @@ func TestPrintf(t *testing.T) {
 
 	tests := []struct {
 		name string
-		fn   func(string, ...any)
+		fn   func(string, ...interface{})
 		lv   Level
 	}{
 		{
@@ -80,7 +80,7 @@ func TestPrint(t *testing.T) {
 
 	tests := []struct {
 		name string
-		fn   func(...any)
+		fn   func(...interface{})
 		lv   Level
 	}{
 		{
@@ -276,16 +276,16 @@ func TestLogFacade(t *testing.T) {
 	SetCaller(true)
 
 	tests := []struct {
-		arr    []any
+		arr    []interface{}
 		f      string
-		a      []any
+		a      []interface{}
 		msg    string
 		fields []Field
 	}{
 		{
-			arr: []any{"t1", "t2"},
+			arr: []interface{}{"t1", "t2"},
 			f:   "t%d%s",
-			a:   []any{3, "t4"},
+			a:   []interface{}{3, "t4"},
 			msg: "t5",
 			fields: []Field{
 				{Key: "name", Value: "bob"},
@@ -338,11 +338,11 @@ type customLogger struct {
 	Logger
 }
 
-func (l *customLogger) Slow(a ...any) {
+func (l *customLogger) Slow(a ...interface{}) {
 	l.Log(Record{Level: WARN, LevelTag: "slow", CallerSkip: 1, MsgArgs: a})
 }
 
-func (l *customLogger) Stat(a ...any) {
+func (l *customLogger) Stat(a ...interface{}) {
 	l.Log(Record{Level: INFO, LevelTag: "stat", CallerSkip: 1, MsgArgs: a})
 }
 
@@ -358,9 +358,9 @@ func TestWrapLogger(t *testing.T) {
 }
 
 func logging(tt struct {
-	arr    []any
+	arr    []interface{}
 	f      string
-	a      []any
+	a      []interface{}
 	msg    string
 	fields []Field
 }) {
@@ -389,7 +389,7 @@ func TestPlainOutput(t *testing.T) {
 
 func BenchmarkInfow(b *testing.B) {
 	b.Run("std.logger", func(b *testing.B) {
-		logger := log.New(discard{}, "", log.Ldate|log.Ltime|log.Lmsgprefix)
+		logger := log.New(discard{}, "", log.Ldate|log.Ltime)
 
 		b.ReportAllocs()
 		b.ResetTimer()
