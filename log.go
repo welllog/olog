@@ -28,6 +28,18 @@ func GetLogger() Logger {
 	return getDefLogger()
 }
 
+// SetLoggerOptions sets the options for the default logger.
+func SetLoggerOptions(opts ...LoggerOption) {
+	if len(opts) == 0 {
+		return
+	}
+	l := getDefLogger().clone()
+	for _, opt := range opts {
+		opt(l)
+	}
+	setDefLogger(l)
+}
+
 // SetAppName sets the name of the application.
 func SetAppName(name string) {
 	l := getDefLogger().clone()
