@@ -2,6 +2,7 @@ package olog
 
 import (
 	"runtime"
+	"strconv"
 )
 
 // TrimLineEnding function removes the trailing newline character ('\n') from the end of the byte slice.
@@ -47,4 +48,16 @@ func shortFile(file string) string {
 		return file
 	}
 	return file[idx+1:]
+}
+
+// Escaped function returns a string with all the special characters escaped.
+func Escaped(s string) string {
+	for _, v := range s {
+		if v == '"' || v == '\\' || !strconv.IsPrint(v) {
+			s = strconv.Quote(s)
+			return s[1 : len(s)-1]
+		}
+	}
+
+	return s
 }
