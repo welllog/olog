@@ -43,7 +43,7 @@ func SetLoggerOptions(opts ...LoggerOption) {
 // SetAppName sets the name of the application.
 func SetAppName(name string) {
 	l := getDefLogger().clone()
-	l.app = name
+	l.app = Escaped(name)
 	setDefLogger(l)
 }
 

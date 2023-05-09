@@ -13,14 +13,15 @@ const defStackSize = 5
 
 // logger represents a logger instance with configurable options
 type logger struct {
-	app     string     // the name of the application
-	level   Level      // the minimum level of logging to output
-	caller  EnableOp   // flag indicating whether to log the caller information
-	color   EnableOp   // flag indicating whether to use colorized output for levelTag on plain encoding
-	encType EncodeType // the encoding type to use for encoding the log message
-	timeFmt string     // time format to use for logging
-	enc     Encoder    // enc to use for encoding the log message
-	wr      Writer     // wr to output log to
+	app       string                                // the name of the application
+	level     Level                                 // the minimum level of logging to output
+	caller    EnableOp                              // flag indicating whether to log the caller information
+	color     EnableOp                              // flag indicating whether to use colorized output for levelTag on plain encoding
+	encType   EncodeType                            // the encoding type to use for encoding the log message
+	timeFmt   string                                // time format to use for logging
+	enc       Encoder                               // enc to use for encoding the log message
+	wr        Writer                                // wr to output log to
+	beforeEnc []func(string, []any) (string, []any) // beforeEnc to execute before encoding the log message
 }
 
 // NewLogger returns a new Logger instance with optional configurations
@@ -49,7 +50,7 @@ type LoggerOption func(*logger)
 // WithLoggerAppName sets the name of the application
 func WithLoggerAppName(name string) LoggerOption {
 	return func(l *logger) {
-		l.app = name
+		l.app = Escaped(name)
 	}
 }
 
@@ -113,6 +114,13 @@ func WithLoggerEncoder(e Encoder) LoggerOption {
 func WithLoggerWriter(w Writer) LoggerOption {
 	return func(l *logger) {
 		l.wr = w
+	}
+}
+
+// WithLoggerBeforeEnc adds a function to execute before encoding the log message
+func WithLoggerBeforeEnc(f ...func(string, []any) (string, []any)) LoggerOption {
+	return func(l *logger) {
+		l.beforeEnc = append(l.beforeEnc, f...)
 	}
 }
 
@@ -445,14 +453,22 @@ func (l *logger) output(r Record) {
 
 	if r.LevelTag == "" {
 		r.LevelTag = r.Level.String()
+	} else {
+		r.LevelTag = Escaped(r.LevelTag)
 	}
 
 	if r.App == "" {
 		r.App = l.app
+	} else {
+		r.App = Escaped(r.App)
 	}
 
 	if r.TimeFmt == "" {
 		r.TimeFmt = l.timeFmt
+	}
+
+	for _, f := range l.beforeEnc {
+		r.MsgOrFormat, r.MsgArgs = f(r.MsgOrFormat, r.MsgArgs)
 	}
 
 	switch l.encType {
