@@ -13,6 +13,8 @@ const defStackSize = 5
 
 type BeforeEncHandler func(string, []interface{}) (string, []interface{})
 
+type AfterEncHandler func([]byte) []byte
+
 // logger represents a logger instance with configurable options
 type logger struct {
 	app       string             // the name of the application
@@ -24,6 +26,7 @@ type logger struct {
 	enc       Encoder            // enc to use for encoding the log message
 	wr        Writer             // wr to output log to
 	beforeEnc []BeforeEncHandler // beforeEnc to execute before encoding the log message
+	afterEnc  []AfterEncHandler  // afterEnc to execute after encoding the log message
 }
 
 // NewLogger returns a new Logger instance with optional configurations
@@ -123,6 +126,13 @@ func WithLoggerWriter(w Writer) LoggerOption {
 func WithLoggerBeforeEnc(f ...BeforeEncHandler) LoggerOption {
 	return func(l *logger) {
 		l.beforeEnc = append(l.beforeEnc, f...)
+	}
+}
+
+// WithLoggerAfterEnc adds a function to execute after encoding the log message
+func WithLoggerAfterEnc(f ...AfterEncHandler) LoggerOption {
+	return func(l *logger) {
+		l.afterEnc = append(l.afterEnc, f...)
 	}
 }
 
@@ -473,14 +483,24 @@ func (l *logger) output(r Record) {
 		r.MsgOrFormat, r.MsgArgs = f(r.MsgOrFormat, r.MsgArgs)
 	}
 
+	buf := getBuf()
+
 	switch l.encType {
 	case PLAIN:
-		plainEncode(r, l.wr, l.color.IsOpen())
+		plainEncode(r, buf, l.color.IsOpen())
 	case -1:
-		l.enc(r, l.wr)
+		l.enc(r, buf)
 	default:
-		jsonEncode(r, l.wr)
+		jsonEncode(r, buf)
 	}
+
+	data := buf.Bytes()
+	for _, f := range l.afterEnc {
+		data = f(data)
+	}
+	_, _ = l.wr.Write(r.Level, data)
+
+	putBuf(buf)
 
 	if r.OsExit {
 		os.Exit(1)
