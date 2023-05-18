@@ -11,24 +11,24 @@ const defCallerSkip = 5
 // defStackSize is the default maximum number of stack frames to include in the log message.
 const defStackSize = 5
 
-// BeforeEncHandler is the handler to execute before encoding the log message.
-type BeforeEncHandler func(string, []any) (string, []any)
+// BeforeEncHook is the hook to execute before encoding the log message.
+type BeforeEncHook func(string, []any) (string, []any)
 
-// AfterEncHandler is the handler to execute after encoding the log message.
-type AfterEncHandler func([]byte) []byte
+// AfterEncHook is the hook to execute after encoding the log message.
+type AfterEncHook func([]byte) []byte
 
 // logger represents a logger instance with configurable options
 type logger struct {
-	app       string             // the name of the application
-	level     Level              // the minimum level of logging to output
-	caller    EnableOp           // flag indicating whether to log the caller information
-	color     EnableOp           // flag indicating whether to use colorized output for levelTag on plain encoding
-	encType   EncodeType         // the encoding type to use for encoding the log message
-	timeFmt   string             // time format to use for logging
-	enc       Encoder            // enc to use for encoding the log message
-	wr        Writer             // wr to output log to
-	beforeEnc []BeforeEncHandler // beforeEnc to execute before encoding the log message
-	afterEnc  []AfterEncHandler  // afterEnc to execute after encoding the log message
+	app       string          // the name of the application
+	level     Level           // the minimum level of logging to output
+	caller    EnableOp        // flag indicating whether to log the caller information
+	color     EnableOp        // flag indicating whether to use colorized output for levelTag on plain encoding
+	encType   EncodeType      // the encoding type to use for encoding the log message
+	timeFmt   string          // time format to use for logging
+	enc       Encoder         // enc to use for encoding the log message
+	wr        Writer          // wr to output log to
+	beforeEnc []BeforeEncHook // beforeEnc to execute before encoding the log message
+	afterEnc  []AfterEncHook  // afterEnc to execute after encoding the log message
 }
 
 // NewLogger returns a new Logger instance with optional configurations
@@ -125,14 +125,14 @@ func WithLoggerWriter(w Writer) LoggerOption {
 }
 
 // WithLoggerBeforeEnc adds a function to execute before encoding the log message
-func WithLoggerBeforeEnc(f ...BeforeEncHandler) LoggerOption {
+func WithLoggerBeforeEnc(f ...BeforeEncHook) LoggerOption {
 	return func(l *logger) {
 		l.beforeEnc = append(l.beforeEnc, f...)
 	}
 }
 
 // WithLoggerAfterEnc adds a function to execute after encoding the log message
-func WithLoggerAfterEnc(f ...AfterEncHandler) LoggerOption {
+func WithLoggerAfterEnc(f ...AfterEncHook) LoggerOption {
 	return func(l *logger) {
 		l.afterEnc = append(l.afterEnc, f...)
 	}

@@ -4,7 +4,7 @@ import (
 	"context"
 )
 
-// The ctxLogger type embeds the Logger interface and adds context, entries, and context handle fields.
+// The ctxLogger is a logger that can be used to log with context.
 type ctxLogger struct {
 	Logger
 	fields []Field
