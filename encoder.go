@@ -65,7 +65,7 @@ var (
 	}
 )
 
-// jsonEncode to encode a Record object as JSON and write it to the given Writer.
+// jsonEncode to encode a Record object as JSON to the buffer.
 func jsonEncode(r Record, buf *Buffer) {
 	_, _ = buf.WriteString(`{"@timestamp":"`)
 	buf.WriteTime(time.Now(), r.TimeFmt)
@@ -154,7 +154,7 @@ func jsonEncode(r Record, buf *Buffer) {
 	_, _ = buf.WriteString("}\n")
 }
 
-// plainEncode to encode a Record object as plain text and write it to the given Writer.
+// plainEncode to encode a Record object as plain text to the buffer.
 func plainEncode(r Record, buf *Buffer, enableColor bool) {
 	buf.WriteTime(time.Now(), r.TimeFmt)
 	_ = buf.WriteByte(sep)
