@@ -229,26 +229,55 @@ func TestWithContext(t *testing.T) {
 	})
 
 	SetEncode(PLAIN)
+	fields1 := []Field{{Key: "uid", Value: 3}}
 	l := WithContext(GetLogger(), ctx)
 	l.Debug("test 1")
+	validateFields(t, l, fields1)
 
+	fields2 := []Field{{Key: "name", Value: "bob"}, {Key: "uid", Value: 3}}
 	ctx = context.WithValue(context.Background(), "name", "bob")
 	l = WithContext(l, ctx)
 	l.Debug("test 2")
+	validateFields(t, l, fields2)
 
+	fields3 := fields2
 	l = WithContext(l, context.Background())
 	l.Debug("test 3")
+	validateFields(t, l, fields3)
 
 	l = WithEntries(l, map[string]interface{}{
 		"ip":      "127.0.0.1",
 		"score":   99.9,
 		"success": true,
 	})
-
+	fields4 := l.buildFields()
 	l.Debug("test 4")
+	if len(fields4) != 5 {
+		t.Fatal("fields length not correct")
+	}
 
+	fields5 := []Field{{Key: "name", Value: "linda"}}
+	fields5 = append(fields5, fields4...)
 	l = WithContext(l, context.WithValue(context.Background(), "name", "linda"))
 	l.Debug("test 5")
+	validateFields(t, l, fields5)
+
 	l.Log(Record{Level: DEBUG, Caller: Disable, LevelTag: "print", Stack: Enable, StackSize: 0,
 		MsgOrFormat: "test 6"})
+}
+
+func validateFields(t *testing.T, l Logger, fields []Field) {
+	fs := l.buildFields()
+	if len(fs) != len(fields) {
+		t.Fatal("fields length not equal")
+	}
+
+	for i, f := range fs {
+		if f.Key != fields[i].Key {
+			t.Fatalf("field key not equal, want = %s, got = %s", fields[i].Key, f.Key)
+		}
+		if f.Value != fields[i].Value {
+			t.Fatalf("field value not equal, want = %v, got = %v", fields[i].Value, f.Value)
+		}
+	}
 }

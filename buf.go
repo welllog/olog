@@ -121,19 +121,39 @@ func (b *Buffer) WriteSprintf(format string, args ...interface{}) {
 }
 
 func (b *Buffer) WriteQuoteSprint(args ...interface{}) {
+	_ = b.WriteByte('"')
+
 	l := len(b.buf)
 	_, _ = fmt.Fprint(b, args...)
-	s := string(b.buf[l:])
-	b.buf = b.buf[:l]
-	b.WriteQuoteString(s)
+	tmp := b.buf[l:]
+	tmpStr := *(*string)(unsafe.Pointer(&tmp))
+
+	index := b.checkQuote(tmpStr)
+	if index >= 0 {
+		s := string(b.buf[l+index:])
+		b.buf = b.buf[:l+index]
+		b.writeQuoteString(s)
+	}
+
+	_ = b.WriteByte('"')
 }
 
 func (b *Buffer) WriteQuoteSprintf(format string, args ...interface{}) {
+	_ = b.WriteByte('"')
+
 	l := len(b.buf)
 	_, _ = fmt.Fprintf(b, format, args...)
-	s := string(b.buf[l:])
-	b.buf = b.buf[:l]
-	b.WriteQuoteString(s)
+	tmp := b.buf[l:]
+	tmpStr := *(*string)(unsafe.Pointer(&tmp))
+
+	index := b.checkQuote(tmpStr)
+	if index >= 0 {
+		s := string(b.buf[l+index:])
+		b.buf = b.buf[:l+index]
+		b.writeQuoteString(s)
+	}
+
+	_ = b.WriteByte('"')
 }
 
 func (b *Buffer) WriteAny(value interface{}, quoteStr bool) {
@@ -212,20 +232,7 @@ func (b *Buffer) WriteQuoteString(s string) {
 		b.buf = growSlice(b.buf, len(s)+2)
 	}
 	_ = b.WriteByte('"')
-	for width := 0; len(s) > 0; s = s[width:] {
-		r := rune(s[0])
-		width = 1
-		if r >= utf8.RuneSelf {
-			r, width = utf8.DecodeRuneInString(s)
-		}
-		if width == 1 && r == utf8.RuneError {
-			_, _ = b.WriteString(`\x`)
-			_ = b.WriteByte(lowerhex[s[0]>>4])
-			_ = b.WriteByte(lowerhex[s[0]&0xF])
-			continue
-		}
-		b.WriteEscapedRune(r)
-	}
+	b.writeQuoteString(s)
 	_ = b.WriteByte('"')
 }
 
@@ -277,6 +284,36 @@ func (b *Buffer) WriteEscapedRune(r rune) {
 			}
 		}
 	}
+}
+
+func (b *Buffer) writeQuoteString(s string) {
+	for width := 0; len(s) > 0; s = s[width:] {
+		r := rune(s[0])
+		width = 1
+		if r >= utf8.RuneSelf {
+			r, width = utf8.DecodeRuneInString(s)
+		}
+		if width == 1 && r == utf8.RuneError {
+			_, _ = b.WriteString(`\x`)
+			_ = b.WriteByte(lowerhex[s[0]>>4])
+			_ = b.WriteByte(lowerhex[s[0]&0xF])
+			continue
+		}
+		b.WriteEscapedRune(r)
+	}
+}
+
+func (b *Buffer) checkQuote(s string) int {
+	for i, r := range s {
+		if r == '"' || r == '\\' || r == utf8.RuneError {
+			return i
+		}
+
+		if !strconv.IsPrint(r) {
+			return i
+		}
+	}
+	return -1
 }
 
 // tryGrowByReslice is a inlineable version of grow for the fast-case where the

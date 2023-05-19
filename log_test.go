@@ -387,6 +387,72 @@ func TestPlainOutput(t *testing.T) {
 	//Fatal("fatal exit")
 }
 
+func BenchmarkInfo(b *testing.B) {
+	b.Run("olog.json", func(b *testing.B) {
+		logger := NewLogger(WithLoggerWriter(NewWriter(discard{})), WithLoggerCaller(false))
+
+		b.ReportAllocs()
+		b.ResetTimer()
+
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				logger.Infow("test message", Field{Key: "name", Value: "bob"}, Field{Key: "age", Value: 18}, Field{Key: "success", Value: true})
+				logger.Info("test message", "name", "bob", "age", 18, "success", true)
+				logger.Infof("test message name %s age %d success %t", "bob", 18, true)
+			}
+		})
+	})
+
+	b.Run("olog.plain", func(b *testing.B) {
+		logger := NewLogger(WithLoggerWriter(NewWriter(discard{})), WithLoggerCaller(false), WithLoggerEncode(PLAIN))
+
+		b.ReportAllocs()
+		b.ResetTimer()
+
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				logger.Infow("test message", Field{Key: "name", Value: "bob"}, Field{Key: "age", Value: 18}, Field{Key: "success", Value: true})
+				logger.Info("test message", "name", "bob", "age", 18, "success", true)
+				logger.Infof("test message name %s age %d success %t", "bob", 18, true)
+			}
+		})
+	})
+
+	b.Run("olog.ctx.json", func(b *testing.B) {
+		logger := NewLogger(WithLoggerWriter(NewWriter(discard{})), WithLoggerCaller(false))
+		logger = WithContext(logger, context.Background())
+		logger = WithContext(logger, context.Background())
+
+		b.ReportAllocs()
+		b.ResetTimer()
+
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				logger.Infow("test message", Field{Key: "name", Value: "bob"}, Field{Key: "age", Value: 18}, Field{Key: "success", Value: true})
+				logger.Info("test message", "name", "bob", "age", 18, "success", true)
+				logger.Infof("test message name %s age %d success %t", "bob", 18, true)
+			}
+		})
+	})
+
+	b.Run("olog.ctx.plain", func(b *testing.B) {
+		logger := NewLogger(WithLoggerWriter(NewWriter(discard{})), WithLoggerCaller(false), WithLoggerEncode(PLAIN))
+		logger = WithContext(logger, context.Background())
+		logger = WithContext(logger, context.Background())
+
+		b.ReportAllocs()
+		b.ResetTimer()
+
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				logger.Infow("test message", Field{Key: "name", Value: "bob"}, Field{Key: "age", Value: 18}, Field{Key: "success", Value: true})
+				logger.Info("test message", "name", "bob", "age", 18, "success", true)
+				logger.Infof("test message name %s age %d success %t", "bob", 18, true)
+			}
+		})
+	})
+}
+
 func BenchmarkInfow(b *testing.B) {
 	b.Run("std.logger", func(b *testing.B) {
 		logger := log.New(discard{}, "", log.Ldate|log.Ltime)
