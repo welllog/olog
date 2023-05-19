@@ -65,10 +65,8 @@ var (
 	}
 )
 
-// jsonEncode to encode a Record object as JSON and write it to the given Writer.
-func jsonEncode(r Record, w Writer) {
-	buf := getBuf()
-
+// jsonEncode to encode a Record object as JSON to the buffer.
+func jsonEncode(r Record, buf *Buffer) {
 	_, _ = buf.WriteString(`{"@timestamp":"`)
 	buf.WriteTime(time.Now(), r.TimeFmt)
 	_, _ = buf.WriteString(`","level":"`)
@@ -154,18 +152,10 @@ func jsonEncode(r Record, w Writer) {
 
 	// Write the closing curly brace and newline character to the buffer.
 	_, _ = buf.WriteString("}\n")
-
-	// Write the contents of the buffer to the Writer.
-	_, _ = w.Write(r.Level, buf.Bytes())
-
-	// Reset the buffer and return it to the pool for re-use.
-	putBuf(buf)
 }
 
-// plainEncode to encode a Record object as plain text and write it to the given Writer.
-func plainEncode(r Record, w Writer, enableColor bool) {
-	buf := getBuf()
-
+// plainEncode to encode a Record object as plain text to the buffer.
+func plainEncode(r Record, buf *Buffer, enableColor bool) {
 	buf.WriteTime(time.Now(), r.TimeFmt)
 	_ = buf.WriteByte(sep)
 	if enableColor {
@@ -254,10 +244,4 @@ func plainEncode(r Record, w Writer, enableColor bool) {
 
 	// Write the newline character to the buffer.
 	_ = buf.WriteByte('\n')
-
-	// Write the contents of the buffer to the Writer.
-	_, _ = w.Write(r.Level, buf.Bytes())
-
-	// Reset the buffer and return it to the pool for re-use.
-	putBuf(buf)
 }

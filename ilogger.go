@@ -82,4 +82,4 @@ type Record struct {
 }
 
 // Encoder is a function that encodes a log message.
-type Encoder func(Record, Writer)
+type Encoder func(Record, *Buffer)
