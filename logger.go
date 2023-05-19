@@ -514,13 +514,15 @@ func (l *logger) output(r Record) {
 
 func (l *logger) clone() *logger {
 	return &logger{
-		app:     l.app,
-		level:   l.level,
-		caller:  l.caller,
-		color:   l.color,
-		encType: l.encType,
-		timeFmt: l.timeFmt,
-		enc:     l.enc,
-		wr:      l.wr,
+		app:       l.app,
+		level:     l.level,
+		caller:    l.caller,
+		color:     l.color,
+		encType:   l.encType,
+		timeFmt:   l.timeFmt,
+		enc:       l.enc,
+		wr:        l.wr,
+		beforeEnc: l.beforeEnc,
+		afterEnc:  l.afterEnc,
 	}
 }
