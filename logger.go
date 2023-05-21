@@ -139,7 +139,9 @@ func WithLoggerAfterEnc(f ...AfterEncHook) LoggerOption {
 }
 
 func (l *logger) Log(r Record) {
-	l.log(r)
+	if l.IsEnabled(r.Level) {
+		l.log(r)
+	}
 }
 
 func (l *logger) Fatal(a ...interface{}) {
@@ -231,19 +233,17 @@ func (l *logger) IsEnabled(level Level) bool {
 }
 
 func (l *logger) log(r Record) {
-	if l.IsEnabled(r.Level) {
-		if r.Stack == Default {
-			r.Stack = Disable
-		}
-
-		if r.StackSize == 0 {
-			r.StackSize = defStackSize
-		}
-
-		r.CallerSkip = defCallerSkip + r.CallerSkip
-
-		l.output(r)
+	if r.Stack == Default {
+		r.Stack = Disable
 	}
+
+	if r.StackSize == 0 {
+		r.StackSize = defStackSize
+	}
+
+	r.CallerSkip = defCallerSkip + r.CallerSkip
+
+	l.output(r)
 }
 
 func (l *logger) fatal(a ...interface{}) {
