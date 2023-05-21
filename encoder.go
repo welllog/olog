@@ -108,15 +108,7 @@ func jsonEncode(r Record, buf *Buffer) {
 
 	_, _ = buf.WriteString(`","content":`)
 
-	if len(r.MsgArgs) > 0 {
-		if r.MsgOrFormat != "" {
-			buf.WriteQuoteSprintf(r.MsgOrFormat, r.MsgArgs...)
-		} else {
-			buf.WriteQuoteSprint(r.MsgArgs...)
-		}
-	} else {
-		buf.WriteQuoteString(r.MsgOrFormat)
-	}
+	buf.WriteQuoteSprintf(r.MsgOrFormat, r.MsgArgs...)
 
 	set := make(map[string]struct{}, len(r.Fields))
 	// Loop over the fields of the Record object and write them to the buffer as JSON.
@@ -201,15 +193,7 @@ func plainEncode(r Record, buf *Buffer, enableColor bool) {
 		_ = buf.WriteByte(sep)
 	}
 
-	if len(r.MsgArgs) > 0 {
-		if r.MsgOrFormat != "" {
-			buf.WriteSprintf(r.MsgOrFormat, r.MsgArgs...)
-		} else {
-			buf.WriteSprint(r.MsgArgs...)
-		}
-	} else {
-		_, _ = buf.WriteString(r.MsgOrFormat)
-	}
+	buf.WriteSprintf(r.MsgOrFormat, r.MsgArgs...)
 
 	set := make(map[string]struct{}, len(r.Fields))
 	// Loop over the fields of the Record object and write them to the buffer as plain text.

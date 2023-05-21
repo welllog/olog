@@ -117,7 +117,17 @@ func (b *Buffer) WriteSprint(args ...interface{}) {
 }
 
 func (b *Buffer) WriteSprintf(format string, args ...interface{}) {
-	_, _ = fmt.Fprintf(b, format, args...)
+	if len(args) == 0 {
+		_, _ = b.WriteString(format)
+		return
+	}
+
+	if format == "" {
+		b.WriteSprint(args...)
+		return
+	}
+
+	b.writeSprintf(format, args...)
 }
 
 func (b *Buffer) WriteQuoteSprint(args ...interface{}) {
@@ -125,35 +135,22 @@ func (b *Buffer) WriteQuoteSprint(args ...interface{}) {
 
 	l := len(b.buf)
 	_, _ = fmt.Fprint(b, args...)
-	tmp := b.buf[l:]
-	tmpStr := *(*string)(unsafe.Pointer(&tmp))
 
-	index := b.checkQuote(tmpStr)
-	if index >= 0 {
-		s := string(b.buf[l+index:])
-		b.buf = b.buf[:l+index]
-		b.writeQuoteString(s)
-	}
-
-	_ = b.WriteByte('"')
+	b.writeRightQuote(l)
 }
 
 func (b *Buffer) WriteQuoteSprintf(format string, args ...interface{}) {
-	_ = b.WriteByte('"')
-
-	l := len(b.buf)
-	_, _ = fmt.Fprintf(b, format, args...)
-	tmp := b.buf[l:]
-	tmpStr := *(*string)(unsafe.Pointer(&tmp))
-
-	index := b.checkQuote(tmpStr)
-	if index >= 0 {
-		s := string(b.buf[l+index:])
-		b.buf = b.buf[:l+index]
-		b.writeQuoteString(s)
+	if len(args) == 0 {
+		b.WriteQuoteString(format)
+		return
 	}
 
-	_ = b.WriteByte('"')
+	if format == "" {
+		b.WriteQuoteSprint(args...)
+		return
+	}
+
+	b.writeQuoteSprintf(format, args...)
 }
 
 func (b *Buffer) WriteAny(value interface{}, quoteStr bool) {
@@ -220,10 +217,10 @@ func (b *Buffer) WriteAny(value interface{}, quoteStr bool) {
 		_, _ = b.WriteString(v.String())
 	default:
 		if quoteStr {
-			b.WriteQuoteSprintf("%+v", value)
+			b.writeQuoteSprintf("%+v", value)
 			return
 		}
-		b.WriteSprintf("%+v", value)
+		b.writeSprintf("%+v", value)
 	}
 }
 
@@ -232,7 +229,7 @@ func (b *Buffer) WriteQuoteString(s string) {
 		b.buf = growSlice(b.buf, len(s)+2)
 	}
 	_ = b.WriteByte('"')
-	b.writeQuoteString(s)
+	b.writeEscapedString(s)
 	_ = b.WriteByte('"')
 }
 
@@ -286,7 +283,7 @@ func (b *Buffer) WriteEscapedRune(r rune) {
 	}
 }
 
-func (b *Buffer) writeQuoteString(s string) {
+func (b *Buffer) writeEscapedString(s string) {
 	for width := 0; len(s) > 0; s = s[width:] {
 		r := rune(s[0])
 		width = 1
@@ -303,7 +300,34 @@ func (b *Buffer) writeQuoteString(s string) {
 	}
 }
 
-func (b *Buffer) checkQuote(s string) int {
+func (b *Buffer) writeSprintf(format string, args ...interface{}) {
+	_, _ = fmt.Fprintf(b, format, args...)
+}
+
+func (b *Buffer) writeQuoteSprintf(format string, args ...interface{}) {
+	_ = b.WriteByte('"')
+
+	l := len(b.buf)
+	_, _ = fmt.Fprintf(b, format, args...)
+
+	b.writeRightQuote(l)
+}
+
+func (b *Buffer) writeRightQuote(offset int) {
+	tmp := b.buf[offset:]
+	tmpStr := *(*string)(unsafe.Pointer(&tmp))
+
+	index := b.checkEscaped(tmpStr)
+	if index >= 0 {
+		s := string(b.buf[offset+index:])
+		b.buf = b.buf[:offset+index]
+		b.writeEscapedString(s)
+	}
+
+	_ = b.WriteByte('"')
+}
+
+func (b *Buffer) checkEscaped(s string) int {
 	for i, r := range s {
 		if r == '"' || r == '\\' || r == utf8.RuneError {
 			return i

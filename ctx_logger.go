@@ -49,37 +49,31 @@ func (c *ctxLogger) Log(r Record) {
 }
 
 func (c *ctxLogger) Fatal(a ...interface{}) {
-	if c.IsEnabled(FATAL) {
-		c.log(Record{
-			Level:   FATAL,
-			MsgArgs: a,
-			Fields:  c.fields,
-			OsExit:  true,
-		})
-	}
+	c.log(Record{
+		Level:   FATAL,
+		MsgArgs: a,
+		Fields:  c.fields,
+		OsExit:  true,
+	})
 }
 
 func (c *ctxLogger) Fatalf(format string, a ...interface{}) {
-	if c.IsEnabled(FATAL) {
-		c.log(Record{
-			Level:       FATAL,
-			MsgOrFormat: format,
-			MsgArgs:     a,
-			Fields:      c.fields,
-			OsExit:      true,
-		})
-	}
+	c.log(Record{
+		Level:       FATAL,
+		MsgOrFormat: format,
+		MsgArgs:     a,
+		Fields:      c.fields,
+		OsExit:      true,
+	})
 }
 
 func (c *ctxLogger) Fatalw(msg string, fields ...Field) {
-	if c.IsEnabled(FATAL) {
-		c.log(Record{
-			Level:       FATAL,
-			MsgOrFormat: msg,
-			Fields:      c.buildFields(fields...),
-			OsExit:      true,
-		})
-	}
+	c.log(Record{
+		Level:       FATAL,
+		MsgOrFormat: msg,
+		Fields:      c.buildFields(fields...),
+		OsExit:      true,
+	})
 }
 
 func (c *ctxLogger) Error(a ...interface{}) {
