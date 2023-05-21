@@ -43,7 +43,7 @@ type Logger interface {
 	// IsEnabled returns whether the given log level is enabled or not.
 	IsEnabled(level Level) bool
 
-	log(opt Record)
+	log(r Record)
 	buildFields(fields ...Field) []Field
 }
 

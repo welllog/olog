@@ -3,7 +3,9 @@ package olog
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"reflect"
 	"testing"
 )
 
@@ -280,4 +282,79 @@ func validateFields(t *testing.T, l Logger, fields []Field) {
 			t.Fatalf("field value not equal, want = %v, got = %v", fields[i].Value, f.Value)
 		}
 	}
+}
+
+type person struct {
+	Name string
+	Age  int
+	Like struct {
+		Video string
+		Book  string
+		Music string
+	}
+}
+
+type addr struct {
+	Province string
+	City     string
+	Zone     string
+}
+
+func TestLogJson(t *testing.T) {
+	initTestLogger()
+	var buf bytes.Buffer
+	SetWriter(NewWriter(&buf))
+
+	p := person{
+		Name: "bob",
+		Age:  18,
+		Like: struct {
+			Video string
+			Book  string
+			Music string
+		}{Video: "The Last Emperor", Book: "out of control", Music: "nothing"},
+	}
+
+	a := addr{
+		Province: "sc",
+		City:     "cd",
+		Zone:     "gaoxin",
+	}
+
+	b1, _ := json.Marshal(&p)
+	b2, _ := json.Marshal(&a)
+
+	WithContext(GetLogger(), context.Background()).Log(Record{
+		Level:       INFO,
+		MsgOrFormat: string(b1),
+		Fields:      []Field{{Key: "addr", Value: b2}},
+	})
+
+	m := map[string]string{}
+	err := json.Unmarshal(buf.Bytes(), &m)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var p1 person
+	var a1 addr
+	err = json.Unmarshal([]byte(m[fieldContent]), &p1)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = json.Unmarshal([]byte(m["addr"]), &a1)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !reflect.DeepEqual(p, p1) {
+		t.Fatal("person not equal")
+	}
+
+	if !reflect.DeepEqual(a, a1) {
+		t.Fatal("addr not equal")
+	}
+
+	fmt.Println(buf.String())
 }

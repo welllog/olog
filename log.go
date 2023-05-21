@@ -112,7 +112,10 @@ func SetWriter(w Writer) {
 
 // Log writes a log message with the given log level.
 func Log(r Record) {
-	getDefLogger().log(r)
+	l := getDefLogger()
+	if l.IsEnabled(r.Level) {
+		l.log(r)
+	}
 }
 
 // Fatal logs a message at fatal level and exits the program with an error status.
