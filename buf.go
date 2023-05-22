@@ -229,7 +229,7 @@ func (b *Buffer) WriteQuoteString(s string) {
 		b.buf = growSlice(b.buf, len(s)+2)
 	}
 	_ = b.WriteByte('"')
-	b.writeEscapedString(s)
+	b.WriteEscapedString(s)
 	_ = b.WriteByte('"')
 }
 
@@ -283,20 +283,72 @@ func (b *Buffer) WriteEscapedRune(r rune) {
 	}
 }
 
-func (b *Buffer) writeEscapedString(s string) {
-	for width := 0; len(s) > 0; s = s[width:] {
-		r := rune(s[0])
-		width = 1
-		if r >= utf8.RuneSelf {
-			r, width = utf8.DecodeRuneInString(s)
-		}
-		if width == 1 && r == utf8.RuneError {
-			_, _ = b.WriteString(`\x`)
-			_ = b.WriteByte(lowerhex[s[0]>>4])
-			_ = b.WriteByte(lowerhex[s[0]&0xF])
+func (b *Buffer) WriteEscapedString(s string) {
+	start := 0
+	for i := 0; i < len(s); {
+		if bt := s[i]; bt < utf8.RuneSelf {
+			if safeSet[bt] {
+				i++
+				continue
+			}
+			if start < i {
+				_, _ = b.WriteString(s[start:i])
+			}
+			_ = b.WriteByte('\\')
+			switch bt {
+			case '\\', '"':
+				_ = b.WriteByte(bt)
+			case '\n':
+				_ = b.WriteByte('n')
+			case '\r':
+				_ = b.WriteByte('r')
+			case '\t':
+				_ = b.WriteByte('t')
+			default:
+				// This encodes bytes < 0x20 except for \t, \n and \r.
+				// If escapeHTML is set, it also escapes <, >, and &
+				// because they can lead to security holes when
+				// user-controlled strings are rendered into JSON
+				// and served to some browsers.
+				_, _ = b.WriteString(`u00`)
+				_ = b.WriteByte(lowerhex[bt>>4])
+				_ = b.WriteByte(lowerhex[bt&0xF])
+			}
+			i++
+			start = i
 			continue
 		}
-		b.WriteEscapedRune(r)
+		c, size := utf8.DecodeRuneInString(s[i:])
+		if c == utf8.RuneError && size == 1 {
+			if start < i {
+				_, _ = b.WriteString(s[start:i])
+			}
+			_, _ = b.WriteString(`\ufffd`)
+			i += size
+			start = i
+			continue
+		}
+		// U+2028 is LINE SEPARATOR.
+		// U+2029 is PARAGRAPH SEPARATOR.
+		// They are both technically valid characters in JSON strings,
+		// but don't work in JSONP, which has to be evaluated as JavaScript,
+		// and can lead to security holes there. It is valid JSON to
+		// escape them, so we do so unconditionally.
+		// See http://timelessrepo.com/json-isnt-a-javascript-subset for discussion.
+		if c == '\u2028' || c == '\u2029' {
+			if start < i {
+				_, _ = b.WriteString(s[start:i])
+			}
+			_, _ = b.WriteString(`\u202`)
+			_ = b.WriteByte(lowerhex[c&0xF])
+			i += size
+			start = i
+			continue
+		}
+		i += size
+	}
+	if start < len(s) {
+		_, _ = b.WriteString(s[start:])
 	}
 }
 
@@ -317,25 +369,34 @@ func (b *Buffer) writeRightQuote(offset int) {
 	tmp := b.buf[offset:]
 	tmpStr := *(*string)(unsafe.Pointer(&tmp))
 
-	index := b.checkEscaped(tmpStr)
+	index := b.indexNeedEscapedString(tmpStr)
 	if index >= 0 {
 		s := string(b.buf[offset+index:])
 		b.buf = b.buf[:offset+index]
-		b.writeEscapedString(s)
+		b.WriteEscapedString(s)
 	}
 
 	_ = b.WriteByte('"')
 }
 
-func (b *Buffer) checkEscaped(s string) int {
-	for i, r := range s {
-		if r == '"' || r == '\\' || r == utf8.RuneError {
+func (b *Buffer) indexNeedEscapedString(s string) int {
+	for i := 0; i < len(s); {
+		if bt := s[i]; bt < utf8.RuneSelf {
+			if safeSet[bt] {
+				i++
+				continue
+			}
 			return i
 		}
 
-		if !strconv.IsPrint(r) {
+		c, size := utf8.DecodeRuneInString(s[i:])
+		if c == utf8.RuneError && size == 1 {
 			return i
 		}
+		if c == '\u2028' || c == '\u2029' {
+			return i
+		}
+		i += size
 	}
 	return -1
 }
@@ -396,4 +457,103 @@ func growSlice(b []byte, n int) []byte {
 	b2 := append([]byte(nil), make([]byte, c)...)
 	copy(b2, b)
 	return b2[:len(b)]
+}
+
+var safeSet = [utf8.RuneSelf]bool{
+	' ':      true,
+	'!':      true,
+	'"':      false,
+	'#':      true,
+	'$':      true,
+	'%':      true,
+	'&':      true,
+	'\'':     true,
+	'(':      true,
+	')':      true,
+	'*':      true,
+	'+':      true,
+	',':      true,
+	'-':      true,
+	'.':      true,
+	'/':      true,
+	'0':      true,
+	'1':      true,
+	'2':      true,
+	'3':      true,
+	'4':      true,
+	'5':      true,
+	'6':      true,
+	'7':      true,
+	'8':      true,
+	'9':      true,
+	':':      true,
+	';':      true,
+	'<':      true,
+	'=':      true,
+	'>':      true,
+	'?':      true,
+	'@':      true,
+	'A':      true,
+	'B':      true,
+	'C':      true,
+	'D':      true,
+	'E':      true,
+	'F':      true,
+	'G':      true,
+	'H':      true,
+	'I':      true,
+	'J':      true,
+	'K':      true,
+	'L':      true,
+	'M':      true,
+	'N':      true,
+	'O':      true,
+	'P':      true,
+	'Q':      true,
+	'R':      true,
+	'S':      true,
+	'T':      true,
+	'U':      true,
+	'V':      true,
+	'W':      true,
+	'X':      true,
+	'Y':      true,
+	'Z':      true,
+	'[':      true,
+	'\\':     false,
+	']':      true,
+	'^':      true,
+	'_':      true,
+	'`':      true,
+	'a':      true,
+	'b':      true,
+	'c':      true,
+	'd':      true,
+	'e':      true,
+	'f':      true,
+	'g':      true,
+	'h':      true,
+	'i':      true,
+	'j':      true,
+	'k':      true,
+	'l':      true,
+	'm':      true,
+	'n':      true,
+	'o':      true,
+	'p':      true,
+	'q':      true,
+	'r':      true,
+	's':      true,
+	't':      true,
+	'u':      true,
+	'v':      true,
+	'w':      true,
+	'x':      true,
+	'y':      true,
+	'z':      true,
+	'{':      true,
+	'|':      true,
+	'}':      true,
+	'~':      true,
+	'\u007f': true,
 }
