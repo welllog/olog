@@ -2,7 +2,8 @@ package olog
 
 import (
 	"runtime"
-	"strconv"
+	"unicode/utf8"
+	"unsafe"
 )
 
 // TrimLineEnding function removes the trailing newline character ('\n') from the end of the byte slice.
@@ -50,14 +51,110 @@ func shortFile(file string) string {
 	return file[idx+1:]
 }
 
-// Escaped function returns a string with all the special characters escaped.
-func Escaped(s string) string {
-	for _, v := range s {
-		if v == '"' || v == '\\' || !strconv.IsPrint(v) {
-			s = strconv.Quote(s)
-			return s[1 : len(s)-1]
-		}
+// EscapedString function returns a string with all the special characters escaped.
+func EscapedString(s string) string {
+	index := indexNeedEscapedString(s)
+	if index == -1 {
+		return s
 	}
 
-	return s
+	buf := make([]byte, 0, len(s)+8)
+	if index > 0 {
+		buf = append(buf, s[:index]...)
+	}
+	buf = appendEscapedString(buf, s[index:])
+	return *(*string)(unsafe.Pointer(&buf))
+}
+
+func appendEscapedString(dst []byte, s string) []byte {
+	start := 0
+	for i := 0; i < len(s); {
+		if bt := s[i]; bt < utf8.RuneSelf {
+			if safeSet[bt] {
+				i++
+				continue
+			}
+			if start < i {
+				dst = append(dst, s[start:i]...)
+			}
+			dst = append(dst, '\\')
+			switch bt {
+			case '\\', '"':
+				dst = append(dst, bt)
+			case '\n':
+				dst = append(dst, 'n')
+			case '\r':
+				dst = append(dst, 'r')
+			case '\t':
+				dst = append(dst, 't')
+			default:
+				// This encodes bytes < 0x20 except for \t, \n and \r.
+				// If escapeHTML is set, it also escapes <, >, and &
+				// because they can lead to security holes when
+				// user-controlled strings are rendered into JSON
+				// and served to some browsers.
+				dst = append(dst, `u00`...)
+				dst = append(dst, lowerhex[bt>>4])
+				dst = append(dst, lowerhex[bt&0xF])
+			}
+			i++
+			start = i
+			continue
+		}
+		c, size := utf8.DecodeRuneInString(s[i:])
+		if c == utf8.RuneError && size == 1 {
+			if start < i {
+				dst = append(dst, s[start:i]...)
+			}
+			dst = append(dst, `\ufffd`...)
+			i += size
+			start = i
+			continue
+		}
+		// U+2028 is LINE SEPARATOR.
+		// U+2029 is PARAGRAPH SEPARATOR.
+		// They are both technically valid characters in JSON strings,
+		// but don't work in JSONP, which has to be evaluated as JavaScript,
+		// and can lead to security holes there. It is valid JSON to
+		// escape them, so we do so unconditionally.
+		// See http://timelessrepo.com/json-isnt-a-javascript-subset for discussion.
+		if c == '\u2028' || c == '\u2029' {
+			if start < i {
+				dst = append(dst, s[start:i]...)
+			}
+			dst = append(dst, `\u202`...)
+			dst = append(dst, lowerhex[c&0xF])
+			i += size
+			start = i
+			continue
+		}
+		i += size
+	}
+	if start < len(s) {
+		dst = append(dst, s[start:]...)
+	}
+
+	return dst
+}
+
+func indexNeedEscapedString(s string) int {
+	for i := 0; i < len(s); {
+		if bt := s[i]; bt < utf8.RuneSelf {
+			if safeSet[bt] {
+				i++
+				continue
+			}
+			return i
+		}
+
+		c, size := utf8.DecodeRuneInString(s[i:])
+		if c == utf8.RuneError && size == 1 {
+			return i
+		}
+		if c == '\u2028' || c == '\u2029' {
+			return i
+		}
+		i += size
+	}
+	return -1
 }

@@ -384,7 +384,7 @@ func TestPlainOutput(t *testing.T) {
 	Errorw("hello world", Field{Key: "success", Value: true})
 	Log(Record{Level: DEBUG, LevelTag: "print", Caller: Disable, Fields: []Field{{Key: "price", Value: 32.5}},
 		Stack: Enable, StackSize: 1, MsgOrFormat: "hello world"})
-	//Fatal("fatal exit")
+	// Fatal("fatal exit")
 }
 
 func BenchmarkInfo(b *testing.B) {
@@ -399,6 +399,10 @@ func BenchmarkInfo(b *testing.B) {
 				logger.Infow("test message", Field{Key: "name", Value: "bob"}, Field{Key: "age", Value: 18}, Field{Key: "success", Value: true})
 				logger.Info("test message", "name", "bob", "age", 18, "success", true)
 				logger.Infof("test message name %s age %d success %t", "bob", 18, true)
+				logger.Infof(
+					"%s",
+					`{"Name":"bob","Age":18,"Like":{"Video":"The Last Emperor","Book":"out of control","Music":"nothing"}}`,
+				)
 			}
 		})
 	})
@@ -414,6 +418,10 @@ func BenchmarkInfo(b *testing.B) {
 				logger.Infow("test message", Field{Key: "name", Value: "bob"}, Field{Key: "age", Value: 18}, Field{Key: "success", Value: true})
 				logger.Info("test message", "name", "bob", "age", 18, "success", true)
 				logger.Infof("test message name %s age %d success %t", "bob", 18, true)
+				logger.Infof(
+					"%s",
+					`{"Name":"bob","Age":18,"Like":{"Video":"The Last Emperor","Book":"out of control","Music":"nothing"}}`,
+				)
 			}
 		})
 	})
@@ -431,6 +439,10 @@ func BenchmarkInfo(b *testing.B) {
 				logger.Infow("test message", Field{Key: "name", Value: "bob"}, Field{Key: "age", Value: 18}, Field{Key: "success", Value: true})
 				logger.Info("test message", "name", "bob", "age", 18, "success", true)
 				logger.Infof("test message name %s age %d success %t", "bob", 18, true)
+				logger.Infof(
+					"%s",
+					`{"Name":"bob","Age":18,"Like":{"Video":"The Last Emperor","Book":"out of control","Music":"nothing"}}`,
+				)
 			}
 		})
 	})
@@ -448,6 +460,10 @@ func BenchmarkInfo(b *testing.B) {
 				logger.Infow("test message", Field{Key: "name", Value: "bob"}, Field{Key: "age", Value: 18}, Field{Key: "success", Value: true})
 				logger.Info("test message", "name", "bob", "age", 18, "success", true)
 				logger.Infof("test message name %s age %d success %t", "bob", 18, true)
+				logger.Infof(
+					"%s",
+					`{"Name":"bob","Age":18,"Like":{"Video":"The Last Emperor","Book":"out of control","Music":"nothing"}}`,
+				)
 			}
 		})
 	})
