@@ -110,6 +110,7 @@ func jsonEncode(r Record, buf *Buffer) {
 
 	buf.WriteQuoteSprintf(r.MsgOrFormat, r.MsgArgs...)
 
+	ve := &ValueEncoder{Buffer: buf}
 	set := make(map[string]struct{}, len(r.Fields))
 	// Loop over the fields of the Record object and write them to the buffer as JSON.
 	for _, field := range r.Fields {
@@ -118,7 +119,7 @@ func jsonEncode(r Record, buf *Buffer) {
 			_, _ = buf.WriteString(`,"`)
 			_, _ = buf.WriteString(field.Key)
 			_, _ = buf.WriteString(`":`)
-			buf.WriteAny(field.Value, true)
+			ve.EncodeJsonValue(field.Value)
 		}
 	}
 
@@ -195,6 +196,7 @@ func plainEncode(r Record, buf *Buffer, enableColor bool) {
 
 	buf.WriteSprintf(r.MsgOrFormat, r.MsgArgs...)
 
+	ve := &ValueEncoder{Buffer: buf}
 	set := make(map[string]struct{}, len(r.Fields))
 	// Loop over the fields of the Record object and write them to the buffer as plain text.
 	for _, field := range r.Fields {
@@ -202,7 +204,7 @@ func plainEncode(r Record, buf *Buffer, enableColor bool) {
 			_ = buf.WriteByte(sep)
 			_, _ = buf.WriteString(field.Key)
 			_ = buf.WriteByte('=')
-			buf.WriteAny(field.Value, false)
+			ve.EncodeValue(field.Value)
 		}
 	}
 

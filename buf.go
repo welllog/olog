@@ -7,13 +7,13 @@ import (
 	"sync"
 	"time"
 	"unicode/utf8"
-	"unsafe"
 )
 
 const (
 	smallBufferSize = 64
 	maxInt          = int(^uint(0) >> 1)
 	lowerhex        = "0123456789abcdef"
+	quote           = '"'
 )
 
 // Declare a new sync.Pool object, which allows for efficient
@@ -167,7 +167,9 @@ func (b *Buffer) WriteSprintf(format string, args ...interface{}) {
 }
 
 func (b *Buffer) WriteQuoteSprint(args ...interface{}) {
-	_, _ = fmt.Fprint(quoteWriter{buf: b}, args...)
+	_ = b.WriteByte(quote)
+	_, _ = fmt.Fprint(escapedWriter{buf: b}, args...)
+	_ = b.WriteByte(quote)
 }
 
 func (b *Buffer) WriteQuoteSprintf(format string, args ...interface{}) {
@@ -184,80 +186,41 @@ func (b *Buffer) WriteQuoteSprintf(format string, args ...interface{}) {
 	b.writeQuoteSprintf(format, args...)
 }
 
-func (b *Buffer) WriteAny(value interface{}, quoteStr bool) {
-	switch v := value.(type) {
-	case string:
-		if quoteStr {
-			b.WriteQuoteString(v)
-			return
-		}
-		_, _ = b.WriteString(v)
-	case []byte:
-		if quoteStr {
-			b.WriteQuoteString(*(*string)(unsafe.Pointer(&v)))
-			return
-		}
-		_, _ = b.Write(v)
-	case error:
-		if quoteStr {
-			b.WriteQuoteString(v.Error())
-			return
-		}
-		_, _ = b.WriteString(v.Error())
-	case time.Time:
-		if quoteStr {
-			_ = b.WriteByte('"')
-			b.buf = v.AppendFormat(b.buf, time.RFC3339)
-			_ = b.WriteByte('"')
-			return
-		}
-		b.buf = v.AppendFormat(b.buf, time.RFC3339)
-	case nil:
-		_, _ = b.WriteString("null")
-	case int:
-		b.buf = strconv.AppendInt(b.buf, int64(v), 10)
-	case int8:
-		b.buf = strconv.AppendInt(b.buf, int64(v), 10)
-	case int16:
-		b.buf = strconv.AppendInt(b.buf, int64(v), 10)
-	case int32:
-		b.buf = strconv.AppendInt(b.buf, int64(v), 10)
-	case int64:
-		b.buf = strconv.AppendInt(b.buf, v, 10)
-	case uint:
-		b.buf = strconv.AppendUint(b.buf, uint64(v), 10)
-	case uint8:
-		b.buf = strconv.AppendUint(b.buf, uint64(v), 10)
-	case uint16:
-		b.buf = strconv.AppendUint(b.buf, uint64(v), 10)
-	case uint32:
-		b.buf = strconv.AppendUint(b.buf, uint64(v), 10)
-	case uint64:
-		b.buf = strconv.AppendUint(b.buf, v, 10)
-	case float32:
-		b.buf = strconv.AppendFloat(b.buf, float64(v), 'f', -1, 32)
-	case float64:
-		b.buf = strconv.AppendFloat(b.buf, v, 'f', -1, 64)
-	case bool:
-		b.buf = strconv.AppendBool(b.buf, v)
-	case fmt.Stringer:
-		if quoteStr {
-			b.WriteQuoteString(v.String())
-			return
-		}
-		_, _ = b.WriteString(v.String())
-	default:
-		if quoteStr {
-			b.writeQuoteSprintf("%+v", value)
-			return
-		}
-		b.writeSprintf("%+v", value)
+func (b *Buffer) WriteQuoteString(s string) {
+	n := len(s) + 16
+	m, ok := b.tryGrowByReslice(n)
+	if !ok {
+		m = b.grow(n)
 	}
+	b.buf = b.buf[:m+1]
+	b.buf[m] = quote
+
+	b.WriteEscapedString(s)
+
+	_ = b.WriteByte(quote)
 }
 
-func (b *Buffer) WriteQuoteString(s string) {
-	b.Grow(len(s) + 16)
-	_ = b.WriteByte('"')
+func (b *Buffer) WriteQuoteBytes(s []byte) {
+	n := len(s) + 16
+	m, ok := b.tryGrowByReslice(n)
+	if !ok {
+		m = b.grow(n)
+	}
+	b.buf = b.buf[:m+1]
+	b.buf[m] = quote
+
+	b.WriteEscapedBytes(s)
+
+	_ = b.WriteByte(quote)
+}
+
+func (b *Buffer) WriteEscapedString(s string) {
+	n := len(s) + 14
+	m, ok := b.tryGrowByReslice(n)
+	if !ok {
+		m = b.grow(n)
+	}
+	b.buf = b.buf[:m]
 
 	start := 0
 	for i := 0; i < len(s); {
@@ -325,13 +288,15 @@ func (b *Buffer) WriteQuoteString(s string) {
 	if start < len(s) {
 		_, _ = b.WriteString(s[start:])
 	}
-
-	_ = b.WriteByte('"')
 }
 
-func (b *Buffer) WriteQuoteBytes(s []byte) {
-	b.Grow(len(s) + 16)
-	_ = b.WriteByte('"')
+func (b *Buffer) WriteEscapedBytes(s []byte) {
+	n := len(s) + 14
+	m, ok := b.tryGrowByReslice(n)
+	if !ok {
+		m = b.grow(n)
+	}
+	b.buf = b.buf[:m]
 
 	start := 0
 	for i := 0; i < len(s); {
@@ -399,8 +364,6 @@ func (b *Buffer) WriteQuoteBytes(s []byte) {
 	if start < len(s) {
 		_, _ = b.Write(s[start:])
 	}
-
-	_ = b.WriteByte('"')
 }
 
 func (b *Buffer) WriteEscapedRune(r rune) {
@@ -452,12 +415,26 @@ func (b *Buffer) WriteEscapedRune(r rune) {
 	b.buf = b.buf[:m+n]
 }
 
+func (b *Buffer) Width() (int, bool) {
+	return 0, false
+}
+
+func (b *Buffer) Precision() (int, bool) {
+	return 0, false
+}
+
+func (b *Buffer) Flag(c int) bool {
+	return false
+}
+
 func (b *Buffer) writeSprintf(format string, args ...interface{}) {
 	_, _ = fmt.Fprintf(b, format, args...)
 }
 
 func (b *Buffer) writeQuoteSprintf(format string, args ...interface{}) {
-	_, _ = fmt.Fprintf(quoteWriter{buf: b}, format, args...)
+	_ = b.WriteByte(quote)
+	_, _ = fmt.Fprintf(escapedWriter{buf: b}, format, args...)
+	_ = b.WriteByte(quote)
 }
 
 // tryGrowByReslice is a inlineable version of grow for the fast-case where the
@@ -518,14 +495,26 @@ func growSlice(b []byte, n int) []byte {
 	return b2[:len(b)]
 }
 
-type quoteWriter struct {
+type escapedWriter struct {
 	buf *Buffer
 }
 
-func (e quoteWriter) Write(p []byte) (n int, err error) {
+func (e escapedWriter) Write(p []byte) (n int, err error) {
 	l := len(e.buf.buf)
-	e.buf.WriteQuoteBytes(p)
+	e.buf.WriteEscapedBytes(p)
 	return len(e.buf.buf) - l, nil
+}
+
+func (e escapedWriter) Width() (int, bool) {
+	return 0, false
+}
+
+func (e escapedWriter) Precision() (int, bool) {
+	return 0, false
+}
+
+func (e escapedWriter) Flag(c int) bool {
+	return false
 }
 
 var safeSet = [utf8.RuneSelf]bool{
