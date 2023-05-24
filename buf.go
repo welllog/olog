@@ -1,7 +1,5 @@
 package olog
 
-// Simple byte buffer for marshaling data.
-
 import (
 	"errors"
 	"fmt"
@@ -9,18 +7,20 @@ import (
 	"sync"
 	"time"
 	"unicode/utf8"
-	"unsafe"
 )
 
-const smallBufferSize = 64
-const maxInt = int(^uint(0) >> 1)
-const lowerhex = "0123456789abcdef"
+const (
+	smallBufferSize = 64
+	maxInt          = int(^uint(0) >> 1)
+	lowerhex        = "0123456789abcdef"
+	quote           = '"'
+)
 
 // Declare a new sync.Pool object, which allows for efficient
 // re-use of objects across goroutines.
 var bufPool = sync.Pool{
 	New: func() interface{} {
-		var b [200]byte
+		var b [256]byte
 		return NewBuffer(b[:0])
 	},
 }
@@ -39,6 +39,7 @@ func putBuf(buf *Buffer) {
 // ErrTooLarge is passed to panic if memory cannot be allocated to store data in a buffer.
 var ErrTooLarge = errors.New("bytes.Buffer: too large")
 
+// Buffer byte buffer for marshaling data.
 type Buffer struct {
 	buf []byte
 }
@@ -47,6 +48,8 @@ type Buffer struct {
 func NewBuffer(buf []byte) *Buffer { return &Buffer{buf: buf} }
 
 func (b *Buffer) Len() int { return len(b.buf) }
+
+func (b *Buffer) Cap() int { return cap(b.buf) }
 
 func (b *Buffer) Bytes() []byte {
 	return b.buf
@@ -62,6 +65,23 @@ func (b *Buffer) Back(n int) {
 
 func (b *Buffer) Reset() {
 	b.buf = b.buf[:0]
+}
+
+func (b *Buffer) Swap(buf []byte) []byte {
+	b.buf, buf = buf, b.buf
+	return buf
+}
+
+func (b *Buffer) Grow(n int) {
+	if n <= 0 {
+		return
+	}
+
+	m, ok := b.tryGrowByReslice(n)
+	if !ok {
+		m = b.grow(n)
+	}
+	b.buf = b.buf[:m]
 }
 
 func (b *Buffer) Write(p []byte) (n int, err error) {
@@ -112,6 +132,22 @@ func (b *Buffer) WriteInt64(n int64) {
 	b.buf = strconv.AppendInt(b.buf, n, 10)
 }
 
+func (b *Buffer) WriteUint64(n uint64) {
+	b.buf = strconv.AppendUint(b.buf, n, 10)
+}
+
+func (b *Buffer) WriteFloat64(f float64) {
+	b.buf = strconv.AppendFloat(b.buf, f, 'f', -1, 64)
+}
+
+func (b *Buffer) WriteFloat32(f float32) {
+	b.buf = strconv.AppendFloat(b.buf, float64(f), 'f', -1, 32)
+}
+
+func (b *Buffer) WriteBool(v bool) {
+	b.buf = strconv.AppendBool(b.buf, v)
+}
+
 func (b *Buffer) WriteSprint(args ...interface{}) {
 	_, _ = fmt.Fprint(b, args...)
 }
@@ -131,12 +167,9 @@ func (b *Buffer) WriteSprintf(format string, args ...interface{}) {
 }
 
 func (b *Buffer) WriteQuoteSprint(args ...interface{}) {
-	_ = b.WriteByte('"')
-
-	l := len(b.buf)
-	_, _ = fmt.Fprint(b, args...)
-
-	b.writeRightQuote(l)
+	_ = b.WriteByte(quote)
+	_, _ = fmt.Fprint(escapedWriter{buf: b}, args...)
+	_ = b.WriteByte(quote)
 }
 
 func (b *Buffer) WriteQuoteSprintf(format string, args ...interface{}) {
@@ -153,151 +186,245 @@ func (b *Buffer) WriteQuoteSprintf(format string, args ...interface{}) {
 	b.writeQuoteSprintf(format, args...)
 }
 
-func (b *Buffer) WriteAny(value interface{}, quoteStr bool) {
-	switch v := value.(type) {
-	case string:
-		if quoteStr {
-			b.WriteQuoteString(v)
-			return
+func (b *Buffer) WriteQuoteString(s string) {
+	n := len(s) + 16
+	m, ok := b.tryGrowByReslice(n)
+	if !ok {
+		m = b.grow(n)
+	}
+	b.buf = b.buf[:m+1]
+	b.buf[m] = quote
+
+	b.WriteEscapedString(s)
+
+	_ = b.WriteByte(quote)
+}
+
+func (b *Buffer) WriteQuoteBytes(s []byte) {
+	n := len(s) + 16
+	m, ok := b.tryGrowByReslice(n)
+	if !ok {
+		m = b.grow(n)
+	}
+	b.buf = b.buf[:m+1]
+	b.buf[m] = quote
+
+	b.WriteEscapedBytes(s)
+
+	_ = b.WriteByte(quote)
+}
+
+func (b *Buffer) WriteEscapedString(s string) {
+	n := len(s) + 14
+	m, ok := b.tryGrowByReslice(n)
+	if !ok {
+		m = b.grow(n)
+	}
+	b.buf = b.buf[:m]
+
+	start := 0
+	for i := 0; i < len(s); {
+		if bt := s[i]; bt < utf8.RuneSelf {
+			if safeSet[bt] {
+				i++
+				continue
+			}
+			if start < i {
+				_, _ = b.WriteString(s[start:i])
+			}
+			_ = b.WriteByte('\\')
+			switch bt {
+			case '\\', '"':
+				_ = b.WriteByte(bt)
+			case '\n':
+				_ = b.WriteByte('n')
+			case '\r':
+				_ = b.WriteByte('r')
+			case '\t':
+				_ = b.WriteByte('t')
+			default:
+				// This encodes bytes < 0x20 except for \t, \n and \r.
+				// If escapeHTML is set, it also escapes <, >, and &
+				// because they can lead to security holes when
+				// user-controlled strings are rendered into JSON
+				// and served to some browsers.
+				_, _ = b.WriteString(`u00`)
+				_ = b.WriteByte(lowerhex[bt>>4])
+				_ = b.WriteByte(lowerhex[bt&0xF])
+			}
+			i++
+			start = i
+			continue
 		}
-		_, _ = b.WriteString(v)
-	case []byte:
-		if quoteStr {
-			b.WriteQuoteString(*(*string)(unsafe.Pointer(&v)))
-			return
+		c, size := utf8.DecodeRuneInString(s[i:])
+		if c == utf8.RuneError && size == 1 {
+			if start < i {
+				_, _ = b.WriteString(s[start:i])
+			}
+			_, _ = b.WriteString(`\ufffd`)
+			i += size
+			start = i
+			continue
 		}
-		_, _ = b.Write(v)
-	case error:
-		if quoteStr {
-			b.WriteQuoteString(v.Error())
-			return
+		// U+2028 is LINE SEPARATOR.
+		// U+2029 is PARAGRAPH SEPARATOR.
+		// They are both technically valid characters in JSON strings,
+		// but don't work in JSONP, which has to be evaluated as JavaScript,
+		// and can lead to security holes there. It is valid JSON to
+		// escape them, so we do so unconditionally.
+		// See http://timelessrepo.com/json-isnt-a-javascript-subset for discussion.
+		if c == '\u2028' || c == '\u2029' {
+			if start < i {
+				_, _ = b.WriteString(s[start:i])
+			}
+			_, _ = b.WriteString(`\u202`)
+			_ = b.WriteByte(lowerhex[c&0xF])
+			i += size
+			start = i
+			continue
 		}
-		_, _ = b.WriteString(v.Error())
-	case time.Time:
-		if quoteStr {
-			_ = b.WriteByte('"')
-			b.buf = v.AppendFormat(b.buf, time.RFC3339)
-			_ = b.WriteByte('"')
-			return
-		}
-		b.buf = v.AppendFormat(b.buf, time.RFC3339)
-	case nil:
-		_, _ = b.WriteString("null")
-	case int:
-		b.buf = strconv.AppendInt(b.buf, int64(v), 10)
-	case int8:
-		b.buf = strconv.AppendInt(b.buf, int64(v), 10)
-	case int16:
-		b.buf = strconv.AppendInt(b.buf, int64(v), 10)
-	case int32:
-		b.buf = strconv.AppendInt(b.buf, int64(v), 10)
-	case int64:
-		b.buf = strconv.AppendInt(b.buf, v, 10)
-	case uint:
-		b.buf = strconv.AppendUint(b.buf, uint64(v), 10)
-	case uint8:
-		b.buf = strconv.AppendUint(b.buf, uint64(v), 10)
-	case uint16:
-		b.buf = strconv.AppendUint(b.buf, uint64(v), 10)
-	case uint32:
-		b.buf = strconv.AppendUint(b.buf, uint64(v), 10)
-	case uint64:
-		b.buf = strconv.AppendUint(b.buf, v, 10)
-	case float32:
-		b.buf = strconv.AppendFloat(b.buf, float64(v), 'f', -1, 32)
-	case float64:
-		b.buf = strconv.AppendFloat(b.buf, v, 'f', -1, 64)
-	case bool:
-		b.buf = strconv.AppendBool(b.buf, v)
-	case fmt.Stringer:
-		if quoteStr {
-			b.WriteQuoteString(v.String())
-			return
-		}
-		_, _ = b.WriteString(v.String())
-	default:
-		if quoteStr {
-			b.writeQuoteSprintf("%+v", value)
-			return
-		}
-		b.writeSprintf("%+v", value)
+		i += size
+	}
+	if start < len(s) {
+		_, _ = b.WriteString(s[start:])
 	}
 }
 
-func (b *Buffer) WriteQuoteString(s string) {
-	if cap(b.buf)-len(b.buf) < len(s) {
-		b.buf = growSlice(b.buf, len(s)+2)
+func (b *Buffer) WriteEscapedBytes(s []byte) {
+	n := len(s) + 14
+	m, ok := b.tryGrowByReslice(n)
+	if !ok {
+		m = b.grow(n)
 	}
-	_ = b.WriteByte('"')
-	b.writeEscapedString(s)
-	_ = b.WriteByte('"')
+	b.buf = b.buf[:m]
+
+	start := 0
+	for i := 0; i < len(s); {
+		if bt := s[i]; bt < utf8.RuneSelf {
+			if safeSet[bt] {
+				i++
+				continue
+			}
+			if start < i {
+				_, _ = b.Write(s[start:i])
+			}
+			_ = b.WriteByte('\\')
+			switch bt {
+			case '\\', '"':
+				_ = b.WriteByte(bt)
+			case '\n':
+				_ = b.WriteByte('n')
+			case '\r':
+				_ = b.WriteByte('r')
+			case '\t':
+				_ = b.WriteByte('t')
+			default:
+				// This encodes bytes < 0x20 except for \t, \n and \r.
+				// If escapeHTML is set, it also escapes <, >, and &
+				// because they can lead to security holes when
+				// user-controlled strings are rendered into JSON
+				// and served to some browsers.
+				_, _ = b.WriteString(`u00`)
+				_ = b.WriteByte(lowerhex[bt>>4])
+				_ = b.WriteByte(lowerhex[bt&0xF])
+			}
+			i++
+			start = i
+			continue
+		}
+		c, size := utf8.DecodeRune(s[i:])
+		if c == utf8.RuneError && size == 1 {
+			if start < i {
+				_, _ = b.Write(s[start:i])
+			}
+			_, _ = b.WriteString(`\ufffd`)
+			i += size
+			start = i
+			continue
+		}
+		// U+2028 is LINE SEPARATOR.
+		// U+2029 is PARAGRAPH SEPARATOR.
+		// They are both technically valid characters in JSON strings,
+		// but don't work in JSONP, which has to be evaluated as JavaScript,
+		// and can lead to security holes there. It is valid JSON to
+		// escape them, so we do so unconditionally.
+		// See http://timelessrepo.com/json-isnt-a-javascript-subset for discussion.
+		if c == '\u2028' || c == '\u2029' {
+			if start < i {
+				_, _ = b.Write(s[start:i])
+			}
+			_, _ = b.WriteString(`\u202`)
+			_ = b.WriteByte(lowerhex[c&0xF])
+			i += size
+			start = i
+			continue
+		}
+		i += size
+	}
+	if start < len(s) {
+		_, _ = b.Write(s[start:])
+	}
 }
 
 func (b *Buffer) WriteEscapedRune(r rune) {
-	if r == '"' || r == '\\' { // always backslashed
-		_ = b.WriteByte('\\')
-		_ = b.WriteByte(byte(r))
-		return
-	}
-
-	if strconv.IsPrint(r) {
-		_, _ = b.WriteRune(r)
-		return
-	}
-
-	switch r {
-	case '\a':
-		_, _ = b.WriteString(`\a`)
-	case '\b':
-		_, _ = b.WriteString(`\b`)
-	case '\f':
-		_, _ = b.WriteString(`\f`)
-	case '\n':
-		_, _ = b.WriteString(`\n`)
-	case '\r':
-		_, _ = b.WriteString(`\r`)
-	case '\t':
-		_, _ = b.WriteString(`\t`)
-	case '\v':
-		_, _ = b.WriteString(`\v`)
-	default:
-		switch {
-		case r < ' ' || r == 0x7f:
-			_, _ = b.WriteString(`\x`)
-			_ = b.WriteByte(lowerhex[byte(r)>>4])
-			_ = b.WriteByte(lowerhex[byte(r)&0xF])
-		case !utf8.ValidRune(r):
-			r = 0xFFFD
-			fallthrough
-		case r < 0x10000:
-			_, _ = b.WriteString(`\u`)
-			for s := 12; s >= 0; s -= 4 {
-				_ = b.WriteByte(lowerhex[r>>uint(s)&0xF])
-			}
-		default:
-			_, _ = b.WriteString(`\U`)
-			for s := 28; s >= 0; s -= 4 {
-				_ = b.WriteByte(lowerhex[r>>uint(s)&0xF])
-			}
+	if uint32(r) < utf8.RuneSelf {
+		if safeSet[byte(r)] {
+			_ = b.WriteByte(byte(r))
+			return
 		}
+
+		_ = b.WriteByte('\\')
+		switch r {
+		case '\\', '"':
+			_ = b.WriteByte(byte(r))
+		case '\n':
+			_ = b.WriteByte('n')
+		case '\r':
+			_ = b.WriteByte('r')
+		case '\t':
+			_ = b.WriteByte('t')
+		default:
+			// This encodes bytes < 0x20 except for \t, \n and \r.
+			// If escapeHTML is set, it also escapes <, >, and &
+			// because they can lead to security holes when
+			// user-controlled strings are rendered into JSON
+			// and served to some browsers.
+			_, _ = b.WriteString(`u00`)
+			_ = b.WriteByte(lowerhex[r>>4])
+			_ = b.WriteByte(lowerhex[r&0xF])
+		}
+		return
 	}
+
+	if r == utf8.RuneError {
+		_, _ = b.WriteString(`\ufffd`)
+		return
+	}
+
+	if r == '\u2028' || r == '\u2029' {
+		_, _ = b.WriteString(`\u202`)
+		_ = b.WriteByte(lowerhex[r&0xF])
+		return
+	}
+
+	m, ok := b.tryGrowByReslice(utf8.UTFMax)
+	if !ok {
+		m = b.grow(utf8.UTFMax)
+	}
+	n := utf8.EncodeRune(b.buf[m:m+utf8.UTFMax], r)
+	b.buf = b.buf[:m+n]
 }
 
-func (b *Buffer) writeEscapedString(s string) {
-	for width := 0; len(s) > 0; s = s[width:] {
-		r := rune(s[0])
-		width = 1
-		if r >= utf8.RuneSelf {
-			r, width = utf8.DecodeRuneInString(s)
-		}
-		if width == 1 && r == utf8.RuneError {
-			_, _ = b.WriteString(`\x`)
-			_ = b.WriteByte(lowerhex[s[0]>>4])
-			_ = b.WriteByte(lowerhex[s[0]&0xF])
-			continue
-		}
-		b.WriteEscapedRune(r)
-	}
+func (b *Buffer) Width() (int, bool) {
+	return 0, false
+}
+
+func (b *Buffer) Precision() (int, bool) {
+	return 0, false
+}
+
+func (b *Buffer) Flag(c int) bool {
+	return false
 }
 
 func (b *Buffer) writeSprintf(format string, args ...interface{}) {
@@ -305,39 +432,9 @@ func (b *Buffer) writeSprintf(format string, args ...interface{}) {
 }
 
 func (b *Buffer) writeQuoteSprintf(format string, args ...interface{}) {
-	_ = b.WriteByte('"')
-
-	l := len(b.buf)
-	_, _ = fmt.Fprintf(b, format, args...)
-
-	b.writeRightQuote(l)
-}
-
-func (b *Buffer) writeRightQuote(offset int) {
-	tmp := b.buf[offset:]
-	tmpStr := *(*string)(unsafe.Pointer(&tmp))
-
-	index := b.checkEscaped(tmpStr)
-	if index >= 0 {
-		s := string(b.buf[offset+index:])
-		b.buf = b.buf[:offset+index]
-		b.writeEscapedString(s)
-	}
-
-	_ = b.WriteByte('"')
-}
-
-func (b *Buffer) checkEscaped(s string) int {
-	for i, r := range s {
-		if r == '"' || r == '\\' || r == utf8.RuneError {
-			return i
-		}
-
-		if !strconv.IsPrint(r) {
-			return i
-		}
-	}
-	return -1
+	_ = b.WriteByte(quote)
+	_, _ = fmt.Fprintf(escapedWriter{buf: b}, format, args...)
+	_ = b.WriteByte(quote)
 }
 
 // tryGrowByReslice is a inlineable version of grow for the fast-case where the
@@ -396,4 +493,126 @@ func growSlice(b []byte, n int) []byte {
 	b2 := append([]byte(nil), make([]byte, c)...)
 	copy(b2, b)
 	return b2[:len(b)]
+}
+
+type escapedWriter struct {
+	buf *Buffer
+}
+
+func (e escapedWriter) Write(p []byte) (n int, err error) {
+	l := len(e.buf.buf)
+	e.buf.WriteEscapedBytes(p)
+	return len(e.buf.buf) - l, nil
+}
+
+func (e escapedWriter) Width() (int, bool) {
+	return 0, false
+}
+
+func (e escapedWriter) Precision() (int, bool) {
+	return 0, false
+}
+
+func (e escapedWriter) Flag(c int) bool {
+	return false
+}
+
+var safeSet = [utf8.RuneSelf]bool{
+	// 0 ~ 31 control characters, default to false
+	' ':      true,
+	'!':      true,
+	'"':      false,
+	'#':      true,
+	'$':      true,
+	'%':      true,
+	'&':      true,
+	'\'':     true,
+	'(':      true,
+	')':      true,
+	'*':      true,
+	'+':      true,
+	',':      true,
+	'-':      true,
+	'.':      true,
+	'/':      true,
+	'0':      true,
+	'1':      true,
+	'2':      true,
+	'3':      true,
+	'4':      true,
+	'5':      true,
+	'6':      true,
+	'7':      true,
+	'8':      true,
+	'9':      true,
+	':':      true,
+	';':      true,
+	'<':      true,
+	'=':      true,
+	'>':      true,
+	'?':      true,
+	'@':      true,
+	'A':      true,
+	'B':      true,
+	'C':      true,
+	'D':      true,
+	'E':      true,
+	'F':      true,
+	'G':      true,
+	'H':      true,
+	'I':      true,
+	'J':      true,
+	'K':      true,
+	'L':      true,
+	'M':      true,
+	'N':      true,
+	'O':      true,
+	'P':      true,
+	'Q':      true,
+	'R':      true,
+	'S':      true,
+	'T':      true,
+	'U':      true,
+	'V':      true,
+	'W':      true,
+	'X':      true,
+	'Y':      true,
+	'Z':      true,
+	'[':      true,
+	'\\':     false,
+	']':      true,
+	'^':      true,
+	'_':      true,
+	'`':      true,
+	'a':      true,
+	'b':      true,
+	'c':      true,
+	'd':      true,
+	'e':      true,
+	'f':      true,
+	'g':      true,
+	'h':      true,
+	'i':      true,
+	'j':      true,
+	'k':      true,
+	'l':      true,
+	'm':      true,
+	'n':      true,
+	'o':      true,
+	'p':      true,
+	'q':      true,
+	'r':      true,
+	's':      true,
+	't':      true,
+	'u':      true,
+	'v':      true,
+	'w':      true,
+	'x':      true,
+	'y':      true,
+	'z':      true,
+	'{':      true,
+	'|':      true,
+	'}':      true,
+	'~':      true,
+	'\u007f': true,
 }

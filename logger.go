@@ -57,7 +57,7 @@ type LoggerOption func(*logger)
 // WithLoggerAppName sets the name of the application
 func WithLoggerAppName(name string) LoggerOption {
 	return func(l *logger) {
-		l.app = Escaped(name)
+		l.app = EscapedString(name)
 	}
 }
 
@@ -468,13 +468,13 @@ func (l *logger) output(r Record) {
 	if r.LevelTag == "" {
 		r.LevelTag = r.Level.String()
 	} else {
-		r.LevelTag = Escaped(r.LevelTag)
+		r.LevelTag = EscapedString(r.LevelTag)
 	}
 
 	if r.App == "" {
 		r.App = l.app
 	} else {
-		r.App = Escaped(r.App)
+		r.App = EscapedString(r.App)
 	}
 
 	if r.TimeFmt == "" {
