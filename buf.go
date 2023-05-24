@@ -518,6 +518,7 @@ func (e escapedWriter) Flag(c int) bool {
 }
 
 var safeSet = [utf8.RuneSelf]bool{
+	// 0 ~ 31 control characters, default to false
 	' ':      true,
 	'!':      true,
 	'"':      false,

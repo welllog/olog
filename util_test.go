@@ -16,6 +16,10 @@ func TestEscapedString(t *testing.T) {
 			es: "what happen\\n",
 		},
 		{
+			s:  "what \\ happen",
+			es: "what \\\\ happen",
+		},
+		{
 			s:  "{\"name\": \"test\"}",
 			es: "{\\\"name\\\": \\\"test\\\"}",
 		},
@@ -26,7 +30,7 @@ func TestEscapedString(t *testing.T) {
 	}
 	for _, tt := range tests {
 		if tt.es != EscapedString(tt.s) {
-			t.Fatalf("get %q, want %q", EscapedString(tt.s), tt.es)
+			t.Fatalf("get %s, want %s", EscapedString(tt.s), tt.es)
 		}
 	}
 }
