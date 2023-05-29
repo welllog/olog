@@ -3,6 +3,8 @@ package olog
 import (
 	"runtime"
 	"time"
+
+	"github.com/welllog/olog/encoder"
 )
 
 // EncodeType is an enumeration type for different encoding types.
@@ -13,8 +15,6 @@ const (
 	JSON EncodeType = iota
 	// PLAIN represents the plain text encoding type.
 	PLAIN
-	// sep is the separator between fields in the log message.
-	sep = '\t'
 )
 
 func FilterFields(fields []Field) []Field {
@@ -52,6 +52,7 @@ func isSkipField(keysSet map[string]struct{}, key string) bool {
 var (
 	fieldTime    = "@timestamp"
 	fieldLevel   = "level"
+	fieldApp     = "app"
 	fieldContent = "content"
 	fieldCaller  = "caller"
 	fieldStack   = "stack"
@@ -59,6 +60,7 @@ var (
 	filterField = map[string]struct{}{
 		fieldTime:    {},
 		fieldLevel:   {},
+		fieldApp:     {},
 		fieldContent: {},
 		fieldCaller:  {},
 		fieldStack:   {},
@@ -66,15 +68,17 @@ var (
 )
 
 // jsonEncode to encode a Record object as JSON to the buffer.
-func jsonEncode(r Record, buf *Buffer) {
-	_, _ = buf.WriteString(`{"@timestamp":"`)
-	buf.WriteTime(time.Now(), r.TimeFmt)
-	_, _ = buf.WriteString(`","level":"`)
-	_, _ = buf.WriteString(r.LevelTag)
+func jsonEncode(r Record, buf *encoder.Buffer) {
+	enc := encoder.JsonEncoder{Buffer: buf}
+
+	_, _ = enc.WriteString(`{"@timestamp":"`)
+	enc.WriteTime(time.Now(), r.TimeFmt)
+	_, _ = enc.WriteString(`","level":"`)
+	_, _ = enc.WriteString(r.LevelTag)
 
 	if r.App != "" {
-		_, _ = buf.WriteString(`","app":"`)
-		_, _ = buf.WriteString(r.App)
+		_, _ = enc.WriteString(`","app":"`)
+		_, _ = enc.WriteString(r.App)
 	}
 
 	var (
@@ -100,39 +104,37 @@ func jsonEncode(r Record, buf *Buffer) {
 		} else {
 			file, line = getCaller(r.CallerSkip)
 		}
-		_, _ = buf.WriteString(`","caller":"`)
-		_, _ = buf.WriteString(shortFile(file))
-		_, _ = buf.WriteString(`:`)
-		buf.WriteInt64(int64(line))
+		_, _ = enc.WriteString(`","caller":"`)
+		enc.WriteEscapedString(shortFile(file))
+		_, _ = enc.WriteString(`:`)
+		enc.WriteInt64(int64(line))
 	}
 
-	_, _ = buf.WriteString(`","content":`)
+	_, _ = enc.WriteString(`","content":"`)
 
-	buf.WriteQuoteSprintf(r.MsgOrFormat, r.MsgArgs...)
+	_, _ = encoder.EPrintf(enc, r.MsgOrFormat, r.MsgArgs...)
+	enc.WriteQuote()
 
-	ve := &ValueEncoder{Buffer: buf}
 	set := make(map[string]struct{}, len(r.Fields))
-	// Loop over the fields of the Record object and write them to the buffer as JSON.
 	for _, field := range r.Fields {
 		if !isSkipField(set, field.Key) {
-			// Write the field key and value to the buffer as JSON.
-			_, _ = buf.WriteString(`,"`)
-			_, _ = buf.WriteString(field.Key)
-			_, _ = buf.WriteString(`":`)
-			ve.EncodeJsonValue(field.Value)
+			_, _ = enc.WriteString(`,"`)
+			enc.WriteEscapedString(field.Key)
+			_, _ = enc.WriteString(`":`)
+			enc.WriteValue(field.Value)
 		}
 	}
 
 	if r.Stack.IsOpen() {
-		_, _ = buf.WriteString(`,"stack":"`)
+		_, _ = enc.WriteString(`,"stack":"`)
 		if frame.File != "" {
 			for {
-				_, _ = buf.WriteString(`\n`)
-				_, _ = buf.WriteString(frame.Function)
-				_, _ = buf.WriteString(`\n\t`)
-				_, _ = buf.WriteString(frame.File)
-				_ = buf.WriteByte(':')
-				buf.WriteInt64(int64(frame.Line))
+				_, _ = enc.WriteString(`\n`)
+				enc.WriteEscapedString(frame.Function)
+				_, _ = enc.WriteString(`\n\t`)
+				enc.WriteEscapedString(frame.File)
+				_ = enc.WriteByte(':')
+				enc.WriteInt64(int64(frame.Line))
 
 				if !more {
 					break
@@ -140,27 +142,29 @@ func jsonEncode(r Record, buf *Buffer) {
 				frame, more = frames.Next()
 			}
 		}
-		_ = buf.WriteByte('"')
+		enc.WriteQuote()
 	}
 
 	// Write the closing curly brace and newline character to the buffer.
-	_, _ = buf.WriteString("}\n")
+	_, _ = enc.WriteString("}\n")
 }
 
 // plainEncode to encode a Record object as plain text to the buffer.
-func plainEncode(r Record, buf *Buffer, enableColor bool) {
-	buf.WriteTime(time.Now(), r.TimeFmt)
-	_ = buf.WriteByte(sep)
+func plainEncode(r Record, buf *encoder.Buffer, enableColor bool) {
+	enc := encoder.PlainEncoder{Buffer: buf}
+
+	enc.WriteTime(time.Now(), r.TimeFmt)
+	enc.WriteSeparator()
 	if enableColor {
-		writeLevelWithColor(r.Level, r.LevelTag, buf)
+		writeLevelWithColor(r.Level, r.LevelTag, enc)
 	} else {
-		_, _ = buf.WriteString(r.LevelTag)
+		_, _ = enc.WriteString(r.LevelTag)
 	}
-	_ = buf.WriteByte(sep)
+	enc.WriteSeparator()
 
 	if r.App != "" {
-		_, _ = buf.WriteString(r.App)
-		_ = buf.WriteByte(sep)
+		_, _ = enc.WriteString(r.App)
+		enc.WriteSeparator()
 	}
 
 	var (
@@ -188,37 +192,35 @@ func plainEncode(r Record, buf *Buffer, enableColor bool) {
 		}
 		file = shortFile(file)
 
-		_, _ = buf.WriteString(file)
-		_ = buf.WriteByte(':')
-		buf.WriteInt64(int64(line))
-		_ = buf.WriteByte(sep)
+		_, _ = enc.WriteString(file)
+		_ = enc.WriteByte(':')
+		enc.WriteInt64(int64(line))
+		enc.WriteSeparator()
 	}
 
-	buf.WriteSprintf(r.MsgOrFormat, r.MsgArgs...)
+	_, _ = encoder.EPrintf(enc, r.MsgOrFormat, r.MsgArgs...)
 
-	ve := &ValueEncoder{Buffer: buf}
 	set := make(map[string]struct{}, len(r.Fields))
 	// Loop over the fields of the Record object and write them to the buffer as plain text.
 	for _, field := range r.Fields {
 		if !isSkipField(set, field.Key) {
-			_ = buf.WriteByte(sep)
-			_, _ = buf.WriteString(field.Key)
-			_ = buf.WriteByte('=')
-			ve.EncodeValue(field.Value)
+			enc.WriteSeparator()
+			enc.WriteName(field.Key)
+			enc.WriteValue(field.Value)
 		}
 	}
 
 	if r.Stack.IsOpen() {
-		_ = buf.WriteByte(sep)
-		_, _ = buf.WriteString("stack=")
+		enc.WriteSeparator()
+		_, _ = enc.WriteString("stack=")
 		if frame.File != "" {
 			for {
-				_ = buf.WriteByte('\n')
-				_, _ = buf.WriteString(frame.Function)
-				_, _ = buf.WriteString("\n\t")
-				_, _ = buf.WriteString(frame.File)
-				_ = buf.WriteByte(':')
-				buf.WriteInt64(int64(frame.Line))
+				_ = enc.WriteByte('\n')
+				_, _ = enc.WriteString(frame.Function)
+				_, _ = enc.WriteString("\n\t")
+				_, _ = enc.WriteString(frame.File)
+				_ = enc.WriteByte(':')
+				enc.WriteInt64(int64(frame.Line))
 
 				if !more {
 					break
@@ -229,5 +231,5 @@ func plainEncode(r Record, buf *Buffer, enableColor bool) {
 	}
 
 	// Write the newline character to the buffer.
-	_ = buf.WriteByte('\n')
+	_ = enc.WriteByte('\n')
 }

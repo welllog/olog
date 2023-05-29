@@ -1,3 +1,4 @@
+//go:build !windows
 // +build !windows
 
 package olog
@@ -17,29 +18,33 @@ const (
 	White     = "\033[97m"
 )
 
+type stringWriter interface {
+	WriteString(string) (int, error)
+}
+
 // writeLevelWithColor takes in a level of logging and a tag string, and returns a string that
 // contains the tag string wrapped with an ANSI color code to represent the level of logging.
 // The returned string will have different colors depending on the level of logging.
-func writeLevelWithColor(level Level, tag string, buf *Buffer) {
+func writeLevelWithColor(level Level, tag string, w stringWriter) {
 	switch level {
 	case FATAL:
-		_, _ = buf.WriteString(RedBold)
+		_, _ = w.WriteString(RedBold)
 	case ERROR:
-		_, _ = buf.WriteString(Red)
+		_, _ = w.WriteString(Red)
 	case WARN:
-		_, _ = buf.WriteString(Yellow)
+		_, _ = w.WriteString(Yellow)
 	case NOTICE:
-		_, _ = buf.WriteString(Blue)
+		_, _ = w.WriteString(Blue)
 	case INFO:
-		_, _ = buf.WriteString(Green)
+		_, _ = w.WriteString(Green)
 	case DEBUG:
-		_, _ = buf.WriteString(Gray)
+		_, _ = w.WriteString(Gray)
 	case TRACE:
-		_, _ = buf.WriteString(Cyan)
+		_, _ = w.WriteString(Cyan)
 	default:
-		_, _ = buf.WriteString(tag)
+		_, _ = w.WriteString(tag)
 		return
 	}
-	_, _ = buf.WriteString(tag)
-	_, _ = buf.WriteString(Reset)
+	_, _ = w.WriteString(tag)
+	_, _ = w.WriteString(Reset)
 }
