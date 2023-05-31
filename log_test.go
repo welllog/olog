@@ -299,10 +299,6 @@ func TestLogFacade(t *testing.T) {
 	}
 
 	SetEncode(PLAIN)
-	for _, tt := range tests {
-		logging(tt)
-	}
-
 	SetTimeFormat("2006/01/02 15/04/05")
 	for _, tt := range tests {
 		logging(tt)
@@ -324,14 +320,6 @@ func TestLogFacade(t *testing.T) {
 	for _, tt := range tests {
 		logging(tt)
 	}
-}
-
-func TestLog(t *testing.T) {
-	initTestLogger()
-	SetCaller(true)
-	SetEncode(PLAIN)
-	Log(Record{Level: INFO, LevelTag: "stat", Fields: []Field{{Key: "name", Value: "bob"}}, MsgOrFormat: "test log"})
-	Log(Record{Level: WARN, Caller: Disable, LevelTag: "slow", MsgOrFormat: "test log"})
 }
 
 type customLogger struct {
@@ -374,17 +362,15 @@ func logging(tt struct {
 func TestPlainOutput(t *testing.T) {
 	SetEncode(PLAIN)
 	SetColor(true)
-	Trace("hello world")
 	Tracew("hello", Field{Key: "name", Value: "bob"})
 	Debug("hello world")
 	Infow("hello", Field{Key: "name", Value: "linda"}, Field{Key: "age", Value: 18})
 	Noticef("hello %s", "world")
-	Warnf("hello %s", "world")
 	Warnw("hello", Field{Key: "order_no", Value: "AWESDDF"})
 	Errorw("hello world", Field{Key: "success", Value: true})
 	Log(Record{Level: DEBUG, LevelTag: "print", Caller: Disable, Fields: []Field{{Key: "price", Value: 32.5}},
 		Stack: Enable, StackSize: 1, MsgOrFormat: "hello world"})
-	//Fatal("fatal exit")
+	// Fatal("fatal exit")
 }
 
 func BenchmarkInfo(b *testing.B) {
@@ -399,6 +385,10 @@ func BenchmarkInfo(b *testing.B) {
 				logger.Infow("test message", Field{Key: "name", Value: "bob"}, Field{Key: "age", Value: 18}, Field{Key: "success", Value: true})
 				logger.Info("test message", "name", "bob", "age", 18, "success", true)
 				logger.Infof("test message name %s age %d success %t", "bob", 18, true)
+				logger.Infof(
+					"%s",
+					`{"Name":"bob","Age":18,"Like":{"Video":"The Last Emperor","Book":"out of control","Music":"nothing"}}`,
+				)
 			}
 		})
 	})
@@ -414,6 +404,10 @@ func BenchmarkInfo(b *testing.B) {
 				logger.Infow("test message", Field{Key: "name", Value: "bob"}, Field{Key: "age", Value: 18}, Field{Key: "success", Value: true})
 				logger.Info("test message", "name", "bob", "age", 18, "success", true)
 				logger.Infof("test message name %s age %d success %t", "bob", 18, true)
+				logger.Infof(
+					"%s",
+					`{"Name":"bob","Age":18,"Like":{"Video":"The Last Emperor","Book":"out of control","Music":"nothing"}}`,
+				)
 			}
 		})
 	})
@@ -431,6 +425,10 @@ func BenchmarkInfo(b *testing.B) {
 				logger.Infow("test message", Field{Key: "name", Value: "bob"}, Field{Key: "age", Value: 18}, Field{Key: "success", Value: true})
 				logger.Info("test message", "name", "bob", "age", 18, "success", true)
 				logger.Infof("test message name %s age %d success %t", "bob", 18, true)
+				logger.Infof(
+					"%s",
+					`{"Name":"bob","Age":18,"Like":{"Video":"The Last Emperor","Book":"out of control","Music":"nothing"}}`,
+				)
 			}
 		})
 	})
@@ -448,6 +446,10 @@ func BenchmarkInfo(b *testing.B) {
 				logger.Infow("test message", Field{Key: "name", Value: "bob"}, Field{Key: "age", Value: 18}, Field{Key: "success", Value: true})
 				logger.Info("test message", "name", "bob", "age", 18, "success", true)
 				logger.Infof("test message name %s age %d success %t", "bob", 18, true)
+				logger.Infof(
+					"%s",
+					`{"Name":"bob","Age":18,"Like":{"Video":"The Last Emperor","Book":"out of control","Music":"nothing"}}`,
+				)
 			}
 		})
 	})

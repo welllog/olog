@@ -1,5 +1,7 @@
 package olog
 
+import "github.com/welllog/olog/encoder"
+
 // Logger is an interface that defines the methods for logging.
 type Logger interface {
 	// Log writes a log message with the given log level.
@@ -81,5 +83,5 @@ type Record struct {
 	TimeFmt     string   // TimeFmt is the format string of the log message.
 }
 
-// Encoder is a function that encodes a log message.
-type Encoder func(Record, *Buffer)
+// EncodeFunc is a function that encodes a log message to a byte slice.
+type EncodeFunc func(Record, *encoder.Buffer)

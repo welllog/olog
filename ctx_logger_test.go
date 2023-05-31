@@ -3,8 +3,10 @@ package olog
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"reflect"
 	"testing"
 )
@@ -214,6 +216,7 @@ func TestCtxPrintw(t *testing.T) {
 
 func TestWithContext(t *testing.T) {
 	setDefLogger(newLogger())
+	SetWriter(NewWriter(io.Discard))
 
 	ctx := context.WithValue(context.Background(), "uid", 3)
 	SetDefCtxHandle(func(ctx context.Context) []Field {
@@ -239,21 +242,21 @@ func TestWithContext(t *testing.T) {
 	fields2 := []Field{{Key: "name", Value: "bob"}, {Key: "uid", Value: 3}}
 	ctx = context.WithValue(context.Background(), "name", "bob")
 	l = WithContext(l, ctx)
-	l.Debug("test 2")
+	l.Info("test 2")
 	validateFields(t, l, fields2)
 
 	fields3 := fields2
 	l = WithContext(l, context.Background())
-	l.Debug("test 3")
+	l.Notice("test 3")
 	validateFields(t, l, fields3)
 
-	l = WithEntries(l, map[string]any{
+	l = WithEntries(l, map[string]interface{}{
 		"ip":      "127.0.0.1",
 		"score":   99.9,
 		"success": true,
 	})
 	fields4 := l.buildFields()
-	l.Debug("test 4")
+	l.Warn("test 4")
 	if len(fields4) != 5 {
 		t.Fatal("fields length not correct")
 	}
@@ -261,10 +264,10 @@ func TestWithContext(t *testing.T) {
 	fields5 := []Field{{Key: "name", Value: "linda"}}
 	fields5 = append(fields5, fields4...)
 	l = WithContext(l, context.WithValue(context.Background(), "name", "linda"))
-	l.Debug("test 5")
+	l.Error("test 5")
 	validateFields(t, l, fields5)
 
-	l.Log(Record{Level: DEBUG, Caller: Disable, LevelTag: "print", Stack: Enable, StackSize: 0,
+	l.Log(Record{Level: TRACE, Caller: Disable, LevelTag: "print", Stack: Enable, StackSize: 0,
 		MsgOrFormat: "test 6"})
 }
 
@@ -343,7 +346,11 @@ func TestLogJson(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = json.Unmarshal([]byte(m["addr"]), &a1)
+	b3, err := base64.StdEncoding.DecodeString(m["addr"])
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = json.Unmarshal(b3, &a1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -355,6 +362,4 @@ func TestLogJson(t *testing.T) {
 	if !reflect.DeepEqual(a, a1) {
 		t.Fatal("addr not equal")
 	}
-
-	fmt.Println(buf.String())
 }
