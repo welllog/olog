@@ -43,7 +43,7 @@ func SetLoggerOptions(opts ...LoggerOption) {
 // SetAppName sets the name of the application.
 func SetAppName(name string) {
 	l := getDefLogger().clone()
-	l.app = Escaped(name)
+	l.app = EscapedString(name)
 	setDefLogger(l)
 }
 
@@ -79,7 +79,7 @@ func SetColor(enable bool) {
 // SetTimeFormat sets the time format string for the default logger.
 func SetTimeFormat(format string) {
 	l := getDefLogger().clone()
-	l.timeFmt = format
+	l.timeFmt = EscapedString(format)
 	setDefLogger(l)
 }
 
@@ -95,8 +95,8 @@ func SetEncode(e EncodeType) {
 	setDefLogger(l)
 }
 
-// SetEncoder sets the log encoding type and encoder for the default logger.
-func SetEncoder(e Encoder) {
+// SetEncodeFunc sets the log encoding type and encode function for the default logger.
+func SetEncodeFunc(e EncodeFunc) {
 	l := getDefLogger().clone()
 	l.encType = -1
 	l.enc = e

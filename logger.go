@@ -2,7 +2,10 @@ package olog
 
 import (
 	"os"
+	"sync"
 	"time"
+
+	"github.com/welllog/olog/encoder"
 )
 
 // defCallerSkip is the default number of stack frames to skip to find the caller information.
@@ -11,10 +14,30 @@ const defCallerSkip = 5
 // defStackSize is the default maximum number of stack frames to include in the log message.
 const defStackSize = 5
 
-// BeforeEncHook is the hook to execute before encoding the log message.
+// Declare a new sync.Pool object, which allows for efficient
+// re-use of objects across goroutines.
+var bufPool = sync.Pool{
+	New: func() interface{} {
+		var b [256]byte
+		return encoder.NewBuffer(b[:0])
+	},
+}
+
+// getBuf to retrieve a *Buffer from the pool.
+func getBuf() *encoder.Buffer {
+	return bufPool.Get().(*encoder.Buffer)
+}
+
+// putBuf to return a *Buffer to the pool.
+func putBuf(buf *encoder.Buffer) {
+	buf.Reset()
+	bufPool.Put(buf)
+}
+
+// BeforeEncHook is the hook function to execute before encoding the log message.
 type BeforeEncHook func(string, []any) (string, []any)
 
-// AfterEncHook is the hook to execute after encoding the log message.
+// AfterEncHook is the hook function to execute after encoding the log message.
 type AfterEncHook func([]byte) []byte
 
 // logger represents a logger instance with configurable options
@@ -25,7 +48,7 @@ type logger struct {
 	color     EnableOp        // flag indicating whether to use colorized output for levelTag on plain encoding
 	encType   EncodeType      // the encoding type to use for encoding the log message
 	timeFmt   string          // time format to use for logging
-	enc       Encoder         // enc to use for encoding the log message
+	enc       EncodeFunc      // enc to use for encoding the log message
 	wr        Writer          // wr to output log to
 	beforeEnc []BeforeEncHook // beforeEnc to execute before encoding the log message
 	afterEnc  []AfterEncHook  // afterEnc to execute after encoding the log message
@@ -57,7 +80,7 @@ type LoggerOption func(*logger)
 // WithLoggerAppName sets the name of the application
 func WithLoggerAppName(name string) LoggerOption {
 	return func(l *logger) {
-		l.app = Escaped(name)
+		l.app = EscapedString(name)
 	}
 }
 
@@ -93,7 +116,7 @@ func WithLoggerColor(enable bool) LoggerOption {
 // WithLoggerTimeFormat sets the time format to use for logging
 func WithLoggerTimeFormat(format string) LoggerOption {
 	return func(l *logger) {
-		l.timeFmt = format
+		l.timeFmt = EscapedString(format)
 	}
 }
 
@@ -109,8 +132,8 @@ func WithLoggerEncode(e EncodeType) LoggerOption {
 	}
 }
 
-// WithLoggerEncoder sets the encoder to use for logging
-func WithLoggerEncoder(e Encoder) LoggerOption {
+// WithLoggerEncodeFunc sets the encoder to use for logging
+func WithLoggerEncodeFunc(e EncodeFunc) LoggerOption {
 	return func(l *logger) {
 		l.enc = e
 		l.encType = -1
@@ -468,18 +491,11 @@ func (l *logger) output(r Record) {
 	if r.LevelTag == "" {
 		r.LevelTag = r.Level.String()
 	} else {
-		r.LevelTag = Escaped(r.LevelTag)
+		r.LevelTag = EscapedString(r.LevelTag)
 	}
 
-	if r.App == "" {
-		r.App = l.app
-	} else {
-		r.App = Escaped(r.App)
-	}
-
-	if r.TimeFmt == "" {
-		r.TimeFmt = l.timeFmt
-	}
+	r.App = l.app
+	r.TimeFmt = l.timeFmt
 
 	for _, f := range l.beforeEnc {
 		r.MsgOrFormat, r.MsgArgs = f(r.MsgOrFormat, r.MsgArgs)
@@ -500,10 +516,7 @@ func (l *logger) output(r Record) {
 	for _, f := range l.afterEnc {
 		data = f(data)
 	}
-
-	if len(data) > 0 {
-		_, _ = l.wr.Write(r.Level, data)
-	}
+	_, _ = l.wr.Write(r.Level, data)
 
 	putBuf(buf)
 
@@ -522,7 +535,7 @@ func (l *logger) clone() *logger {
 		timeFmt:   l.timeFmt,
 		enc:       l.enc,
 		wr:        l.wr,
-		beforeEnc: l.beforeEnc,
 		afterEnc:  l.afterEnc,
+		beforeEnc: l.beforeEnc,
 	}
 }
