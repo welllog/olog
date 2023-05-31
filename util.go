@@ -4,7 +4,11 @@ import (
 	"runtime"
 	"unicode/utf8"
 	"unsafe"
+
+	"github.com/welllog/olog/encoder"
 )
+
+const lowerhex = "0123456789abcdef"
 
 // TrimLineEnding function removes the trailing newline character ('\n') from the end of the byte slice.
 func TrimLineEnding(b []byte) []byte {
@@ -70,7 +74,7 @@ func appendEscapedString(dst []byte, s string) []byte {
 	start := 0
 	for i := 0; i < len(s); {
 		if bt := s[i]; bt < utf8.RuneSelf {
-			if safeSet[bt] {
+			if encoder.SafeSet[bt] {
 				i++
 				continue
 			}
@@ -81,6 +85,10 @@ func appendEscapedString(dst []byte, s string) []byte {
 			switch bt {
 			case '\\', '"':
 				dst = append(dst, bt)
+			case '\b':
+				dst = append(dst, 'b')
+			case '\f':
+				dst = append(dst, 'f')
 			case '\n':
 				dst = append(dst, 'n')
 			case '\r':
@@ -111,23 +119,6 @@ func appendEscapedString(dst []byte, s string) []byte {
 			start = i
 			continue
 		}
-		// U+2028 is LINE SEPARATOR.
-		// U+2029 is PARAGRAPH SEPARATOR.
-		// They are both technically valid characters in JSON strings,
-		// but don't work in JSONP, which has to be evaluated as JavaScript,
-		// and can lead to security holes there. It is valid JSON to
-		// escape them, so we do so unconditionally.
-		// See http://timelessrepo.com/json-isnt-a-javascript-subset for discussion.
-		if c == '\u2028' || c == '\u2029' {
-			if start < i {
-				dst = append(dst, s[start:i]...)
-			}
-			dst = append(dst, `\u202`...)
-			dst = append(dst, lowerhex[c&0xF])
-			i += size
-			start = i
-			continue
-		}
 		i += size
 	}
 	if start < len(s) {
@@ -140,7 +131,7 @@ func appendEscapedString(dst []byte, s string) []byte {
 func indexNeedEscapedString(s string) int {
 	for i := 0; i < len(s); {
 		if bt := s[i]; bt < utf8.RuneSelf {
-			if safeSet[bt] {
+			if encoder.SafeSet[bt] {
 				i++
 				continue
 			}
@@ -149,9 +140,6 @@ func indexNeedEscapedString(s string) int {
 
 		c, size := utf8.DecodeRuneInString(s[i:])
 		if c == utf8.RuneError && size == 1 {
-			return i
-		}
-		if c == '\u2028' || c == '\u2029' {
 			return i
 		}
 		i += size
