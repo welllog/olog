@@ -2,7 +2,6 @@ package olog
 
 import (
 	"runtime"
-	"time"
 
 	"github.com/welllog/olog/encoder"
 )
@@ -72,7 +71,7 @@ func jsonEncode(r Record, buf *encoder.Buffer) {
 	enc := encoder.JsonEncoder{Buffer: buf}
 
 	_, _ = enc.WriteString(`{"@timestamp":"`)
-	enc.WriteTime(time.Now(), r.TimeFmt)
+	enc.WriteTime(r.Time, r.TimeFmt)
 	_, _ = enc.WriteString(`","level":"`)
 	_, _ = enc.WriteString(r.LevelTag)
 
@@ -82,36 +81,26 @@ func jsonEncode(r Record, buf *encoder.Buffer) {
 	}
 
 	var (
-		get    bool
-		more   bool
-		frame  runtime.Frame
-		frames *runtime.Frames
+		more  bool
+		frame runtime.Frame
 	)
-
-	if r.Stack.IsOpen() {
-		frames = getCallerFrames(r.CallerSkip, r.StackSize)
+	frames := r.Frames()
+	if frames != nil {
 		frame, more = frames.Next()
-		get = true
 	}
 
 	if r.Caller.IsOpen() {
-		var (
-			file string
-			line int
-		)
-		if get {
-			file, line = frame.File, frame.Line
-		} else {
-			file, line = getCaller(r.CallerSkip)
+		file := frame.File
+		if r.ShortFile.IsOpen() {
+			file = shortFile(file)
 		}
 		_, _ = enc.WriteString(`","caller":"`)
-		enc.WriteEscapedString(shortFile(file))
+		enc.WriteEscapedString(file)
 		_, _ = enc.WriteString(`:`)
-		enc.WriteInt64(int64(line))
+		enc.WriteInt64(int64(frame.Line))
 	}
 
 	_, _ = enc.WriteString(`","content":"`)
-
 	_, _ = encoder.EPrintf(enc, r.MsgOrFormat, r.MsgArgs...)
 	enc.WriteQuote()
 
@@ -127,7 +116,7 @@ func jsonEncode(r Record, buf *encoder.Buffer) {
 
 	if r.Stack.IsOpen() {
 		_, _ = enc.WriteString(`,"stack":"`)
-		if frame.File != "" {
+		if frame.PC != 0 {
 			for {
 				_, _ = enc.WriteString(`\n`)
 				enc.WriteEscapedString(frame.Function)
@@ -153,7 +142,7 @@ func jsonEncode(r Record, buf *encoder.Buffer) {
 func plainEncode(r Record, buf *encoder.Buffer, enableColor bool) {
 	enc := encoder.PlainEncoder{Buffer: buf}
 
-	enc.WriteTime(time.Now(), r.TimeFmt)
+	enc.WriteTime(r.Time, r.TimeFmt)
 	enc.WriteSeparator()
 	if enableColor {
 		writeLevelWithColor(r.Level, r.LevelTag, enc)
@@ -168,33 +157,23 @@ func plainEncode(r Record, buf *encoder.Buffer, enableColor bool) {
 	}
 
 	var (
-		get    bool
-		more   bool
-		frame  runtime.Frame
-		frames *runtime.Frames
+		more  bool
+		frame runtime.Frame
 	)
-
-	if r.Stack.IsOpen() {
-		frames = getCallerFrames(r.CallerSkip, r.StackSize)
+	frames := r.Frames()
+	if frames != nil {
 		frame, more = frames.Next()
-		get = true
 	}
 
 	if r.Caller.IsOpen() {
-		var (
-			file string
-			line int
-		)
-		if get {
-			file, line = frame.File, frame.Line
-		} else {
-			file, line = getCaller(r.CallerSkip)
+		file := frame.File
+		if r.ShortFile.IsOpen() {
+			file = shortFile(file)
 		}
-		file = shortFile(file)
 
 		_, _ = enc.WriteString(file)
 		_ = enc.WriteByte(':')
-		enc.WriteInt64(int64(line))
+		enc.WriteInt64(int64(frame.Line))
 		enc.WriteSeparator()
 	}
 
@@ -213,7 +192,7 @@ func plainEncode(r Record, buf *encoder.Buffer, enableColor bool) {
 	if r.Stack.IsOpen() {
 		enc.WriteSeparator()
 		_, _ = enc.WriteString("stack=")
-		if frame.File != "" {
+		if frame.PC != 0 {
 			for {
 				_ = enc.WriteByte('\n')
 				_, _ = enc.WriteString(frame.Function)

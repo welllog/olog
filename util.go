@@ -1,7 +1,6 @@
 package olog
 
 import (
-	"runtime"
 	"unicode/utf8"
 	"unsafe"
 
@@ -16,21 +15,6 @@ func TrimLineEnding(b []byte) []byte {
 		return b[:l-1]
 	}
 	return b
-}
-
-func getCaller(skip int8) (string, int) {
-	_, file, line, ok := runtime.Caller(int(skip))
-	if !ok {
-		return "", 0
-	}
-	return file, line
-}
-
-func getCallerFrames(skip int8, size uint8) *runtime.Frames {
-	pc := make([]uintptr, size)
-	n := runtime.Callers(int(skip+1), pc)
-
-	return runtime.CallersFrames(pc[:n])
 }
 
 func shortFile(file string) string {

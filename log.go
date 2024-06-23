@@ -76,6 +76,17 @@ func SetColor(enable bool) {
 	setDefLogger(l)
 }
 
+// SetShortFile sets whether or not to log the short file name for the default logger.
+func SetShortFile(enable bool) {
+	l := getDefLogger().clone()
+	if enable {
+		l.shortFile = Enable
+	} else {
+		l.shortFile = Disable
+	}
+	setDefLogger(l)
+}
+
 // SetTimeFormat sets the time format string for the default logger.
 func SetTimeFormat(format string) {
 	l := getDefLogger().clone()
