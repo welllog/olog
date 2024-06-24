@@ -109,6 +109,15 @@ func (l *CustomLogger) Debug(a ...any) {
 }
 ```
 
+### slog support
+```
+logger := slog.New(
+    NewSlogHandler(NewLogger()),
+)
+
+logger.Info("hello world")
+```
+
 ### Log Content Output
 Currently, log content is output to the console by default. 
 To output content to a file, you need to set the log's Writer by constructing a Writer with the NewWriter function and passing a file pointer.

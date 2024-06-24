@@ -108,6 +108,15 @@ func (l *CustomLogger) Debug(a ...any) {
 }
 ```
 
+### slog支持
+```
+logger := slog.New(
+    NewSlogHandler(NewLogger()),
+)
+
+logger.Info("hello world")
+```
+
 ### 日志内容输出
 目前日志内容默认输出到控制台。
 如果需要输出内容到文件中，需要设置日志的Writer,可以通过将文件指针传递给NewWriter函数来构造一个Writer。
