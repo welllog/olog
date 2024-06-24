@@ -46,6 +46,7 @@ type logger struct {
 	level     Level           // the minimum level of logging to output
 	caller    EnableOp        // flag indicating whether to log the caller information
 	color     EnableOp        // flag indicating whether to use colorized output for levelTag on plain encoding
+	shortFile EnableOp        // flag indicating whether to use short file name in the log message
 	encType   EncodeType      // the encoding type to use for encoding the log message
 	timeFmt   string          // time format to use for logging
 	enc       EncodeFunc      // enc to use for encoding the log message
@@ -62,11 +63,12 @@ func NewLogger(opts ...LoggerOption) Logger {
 // newLogger creates a new logger instance with default options that can be customized with the provided options
 func newLogger(opts ...LoggerOption) *logger {
 	l := logger{
-		caller:  Enable,
-		color:   Enable,
-		encType: JSON,
-		timeFmt: time.RFC3339,
-		wr:      csWriter,
+		caller:    Enable,
+		color:     Enable,
+		shortFile: Enable,
+		encType:   JSON,
+		timeFmt:   time.RFC3339,
+		wr:        csWriter,
 	}
 	for _, opt := range opts {
 		opt(&l)
@@ -109,6 +111,17 @@ func WithLoggerColor(enable bool) LoggerOption {
 			l.color = Enable
 		} else {
 			l.color = Disable
+		}
+	}
+}
+
+// WithLoggerShortFile sets whether to use short file name in the log message
+func WithLoggerShortFile(enable bool) LoggerOption {
+	return func(l *logger) {
+		if enable {
+			l.shortFile = Enable
+		} else {
+			l.shortFile = Disable
 		}
 	}
 }
@@ -484,6 +497,10 @@ func (l *logger) output(r Record) {
 		r.Caller = l.caller
 	}
 
+	if r.ShortFile == Default {
+		r.ShortFile = l.shortFile
+	}
+
 	if r.CallerSkip <= 0 {
 		r.CallerSkip = defCallerSkip
 	}
@@ -492,6 +509,10 @@ func (l *logger) output(r Record) {
 		r.LevelTag = r.Level.String()
 	} else {
 		r.LevelTag = EscapedString(r.LevelTag)
+	}
+
+	if r.Time.IsZero() {
+		r.Time = time.Now()
 	}
 
 	r.App = l.app
@@ -531,6 +552,7 @@ func (l *logger) clone() *logger {
 		level:     l.level,
 		caller:    l.caller,
 		color:     l.color,
+		shortFile: l.shortFile,
 		encType:   l.encType,
 		timeFmt:   l.timeFmt,
 		enc:       l.enc,

@@ -267,9 +267,11 @@ func (c *ctxLogger) Tracew(msg string, fields ...Field) {
 
 // buildFields builds the final fields slice.
 func (c *ctxLogger) buildFields(fields ...Field) []Field {
+	// No new fields, reuse old fields
 	if len(fields) == 0 {
 		return c.fields
 	}
 
+	// not modify the old fields, and ensure that the new field is in front.
 	return append(fields, c.fields...)
 }

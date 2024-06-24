@@ -1,6 +1,11 @@
 package olog
 
-import "github.com/welllog/olog/encoder"
+import (
+	"runtime"
+	"time"
+
+	"github.com/welllog/olog/encoder"
+)
 
 // Logger is an interface that defines the methods for logging.
 type Logger interface {
@@ -68,10 +73,14 @@ const (
 	Disable
 )
 
+// EncodeFunc is a function that encodes a log message to a byte slice.
+type EncodeFunc func(Record, *encoder.Buffer)
+
 type Record struct {
 	Level       Level    // Level is the severity level of the log message.
 	Caller      EnableOp // Caller is the enable of caller information in the log message.
 	Stack       EnableOp // Stack is the enable of stack trace information in the log message.
+	ShortFile   EnableOp // ShortFile is the enable of short file name in the log message.
 	StackSize   uint8    // StackSize is the maximum number of stack frames to include in the log message.
 	CallerSkip  int8     // CallerSkip is the number of stack frames to skip to find the caller information.
 	OsExit      bool     // OsExit is the enable of os.Exit(1) in the log message.
@@ -81,7 +90,20 @@ type Record struct {
 	LevelTag    string   // LevelTag is the string representation of the severity level
 	App         string   // App is the name of the application that created the log message.
 	TimeFmt     string   // TimeFmt is the format string of the log message.
+	Time        time.Time
 }
 
-// EncodeFunc is a function that encodes a log message to a byte slice.
-type EncodeFunc func(Record, *encoder.Buffer)
+func (r Record) Frames() *runtime.Frames {
+	var stackSize int
+	if r.Stack.IsOpen() && r.StackSize > 0 {
+		stackSize = int(r.StackSize)
+	} else if r.Caller.IsOpen() {
+		stackSize = 1
+	} else {
+		return nil
+	}
+
+	pc := make([]uintptr, stackSize)
+	n := runtime.Callers(int(r.CallerSkip+1), pc)
+	return runtime.CallersFrames(pc[:n])
+}
