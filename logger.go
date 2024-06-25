@@ -180,84 +180,84 @@ func (l *logger) Log(r Record) {
 	}
 }
 
-func (l *logger) Fatal(a ...any) {
-	l.fatal(a...)
+func (l *logger) Fatal(args ...any) {
+	l.fatal(args...)
 }
 
-func (l *logger) Fatalf(format string, a ...any) {
-	l.fatalf(format, a...)
+func (l *logger) Fatalf(format string, args ...any) {
+	l.fatalf(format, args...)
 }
 
 func (l *logger) Fatalw(msg string, fields ...Field) {
 	l.fatalw(msg, fields...)
 }
 
-func (l *logger) Error(a ...any) {
-	l.error(a...)
+func (l *logger) Error(args ...any) {
+	l.error(args...)
 }
 
-func (l *logger) Errorf(format string, a ...any) {
-	l.errorf(format, a...)
+func (l *logger) Errorf(format string, args ...any) {
+	l.errorf(format, args...)
 }
 
 func (l *logger) Errorw(msg string, fields ...Field) {
 	l.errorw(msg, fields...)
 }
 
-func (l *logger) Warn(a ...any) {
-	l.warn(a...)
+func (l *logger) Warn(args ...any) {
+	l.warn(args...)
 }
 
-func (l *logger) Warnf(format string, a ...any) {
-	l.warnf(format, a...)
+func (l *logger) Warnf(format string, args ...any) {
+	l.warnf(format, args...)
 }
 
 func (l *logger) Warnw(msg string, fields ...Field) {
 	l.warnw(msg, fields...)
 }
 
-func (l *logger) Notice(a ...any) {
-	l.notice(a...)
+func (l *logger) Notice(args ...any) {
+	l.notice(args...)
 }
 
-func (l *logger) Noticef(format string, a ...any) {
-	l.noticef(format, a...)
+func (l *logger) Noticef(format string, args ...any) {
+	l.noticef(format, args...)
 }
 
 func (l *logger) Noticew(msg string, fields ...Field) {
 	l.noticew(msg, fields...)
 }
 
-func (l *logger) Info(a ...any) {
-	l.info(a...)
+func (l *logger) Info(args ...any) {
+	l.info(args...)
 }
 
-func (l *logger) Infof(format string, a ...any) {
-	l.infof(format, a...)
+func (l *logger) Infof(format string, args ...any) {
+	l.infof(format, args...)
 }
 
 func (l *logger) Infow(msg string, fields ...Field) {
 	l.infow(msg, fields...)
 }
 
-func (l *logger) Debug(a ...any) {
-	l.debug(a...)
+func (l *logger) Debug(args ...any) {
+	l.debug(args...)
 }
 
-func (l *logger) Debugf(format string, a ...any) {
-	l.debugf(format, a...)
+func (l *logger) Debugf(format string, args ...any) {
+	l.debugf(format, args...)
 }
 
 func (l *logger) Debugw(msg string, fields ...Field) {
 	l.debugw(msg, fields...)
 }
 
-func (l *logger) Trace(a ...any) {
-	l.trace(a...)
+func (l *logger) Trace(args ...any) {
+	l.trace(args...)
 }
 
-func (l *logger) Tracef(format string, a ...any) {
-	l.tracef(format, a...)
+func (l *logger) Tracef(format string, args ...any) {
+	l.tracef(format, args...)
 }
 
 func (l *logger) Tracew(msg string, fields ...Field) {

@@ -48,20 +48,20 @@ func (c *ctxLogger) Log(r Record) {
 	}
 }
 
-func (c *ctxLogger) Fatal(a ...any) {
+func (c *ctxLogger) Fatal(args ...any) {
 	c.log(Record{
 		Level:   FATAL,
-		MsgArgs: a,
+		MsgArgs: args,
 		Fields:  c.fields,
 		OsExit:  true,
 	})
 }
 
-func (c *ctxLogger) Fatalf(format string, a ...any) {
+func (c *ctxLogger) Fatalf(format string, args ...any) {
 	c.log(Record{
 		Level:       FATAL,
 		MsgOrFormat: format,
-		MsgArgs:     a,
+		MsgArgs:     args,
 		Fields:      c.fields,
 		OsExit:      true,
 	})
@@ -76,22 +76,22 @@ func (c *ctxLogger) Fatalw(msg string, fields ...Field) {
 	})
 }
 
-func (c *ctxLogger) Error(a ...any) {
+func (c *ctxLogger) Error(args ...any) {
 	if c.IsEnabled(ERROR) {
 		c.log(Record{
 			Level:   ERROR,
-			MsgArgs: a,
+			MsgArgs: args,
 			Fields:  c.fields,
 		})
 	}
 }
 
-func (c *ctxLogger) Errorf(format string, a ...any) {
+func (c *ctxLogger) Errorf(format string, args ...any) {
 	if c.IsEnabled(ERROR) {
 		c.log(Record{
 			Level:       ERROR,
 			MsgOrFormat: format,
-			MsgArgs:     a,
+			MsgArgs:     args,
 			Fields:      c.fields,
 		})
 	}
@@ -107,22 +107,22 @@ func (c *ctxLogger) Errorw(msg string, fields ...Field) {
 	}
 }
 
-func (c *ctxLogger) Warn(a ...any) {
+func (c *ctxLogger) Warn(args ...any) {
 	if c.IsEnabled(WARN) {
 		c.log(Record{
 			Level:   WARN,
-			MsgArgs: a,
+			MsgArgs: args,
 			Fields:  c.fields,
 		})
 	}
 }
 
-func (c *ctxLogger) Warnf(format string, a ...any) {
+func (c *ctxLogger) Warnf(format string, args ...any) {
 	if c.IsEnabled(WARN) {
 		c.log(Record{
 			Level:       WARN,
 			MsgOrFormat: format,
-			MsgArgs:     a,
+			MsgArgs:     args,
 			Fields:      c.fields,
 		})
 	}
@@ -138,22 +138,22 @@ func (c *ctxLogger) Warnw(msg string, fields ...Field) {
 	}
 }
 
-func (c *ctxLogger) Notice(a ...any) {
+func (c *ctxLogger) Notice(args ...any) {
 	if c.IsEnabled(NOTICE) {
 		c.log(Record{
 			Level:   NOTICE,
-			MsgArgs: a,
+			MsgArgs: args,
 			Fields:  c.fields,
 		})
 	}
 }
 
-func (c *ctxLogger) Noticef(format string, a ...any) {
+func (c *ctxLogger) Noticef(format string, args ...any) {
 	if c.IsEnabled(NOTICE) {
 		c.log(Record{
 			Level:       NOTICE,
 			MsgOrFormat: format,
-			MsgArgs:     a,
+			MsgArgs:     args,
 			Fields:      c.fields,
 		})
 	}
@@ -169,22 +169,22 @@ func (c *ctxLogger) Noticew(msg string, fields ...Field) {
 	}
 }
 
-func (c *ctxLogger) Info(a ...any) {
+func (c *ctxLogger) Info(args ...any) {
 	if c.IsEnabled(INFO) {
 		c.log(Record{
 			Level:   INFO,
-			MsgArgs: a,
+			MsgArgs: args,
 			Fields:  c.fields,
 		})
 	}
 }
 
-func (c *ctxLogger) Infof(format string, a ...any) {
+func (c *ctxLogger) Infof(format string, args ...any) {
 	if c.IsEnabled(INFO) {
 		c.log(Record{
 			Level:       INFO,
 			MsgOrFormat: format,
-			MsgArgs:     a,
+			MsgArgs:     args,
 			Fields:      c.fields,
 		})
 	}
@@ -200,22 +200,22 @@ func (c *ctxLogger) Infow(msg string, fields ...Field) {
 	}
 }
 
-func (c *ctxLogger) Debug(a ...any) {
+func (c *ctxLogger) Debug(args ...any) {
 	if c.IsEnabled(DEBUG) {
 		c.log(Record{
 			Level:   DEBUG,
-			MsgArgs: a,
+			MsgArgs: args,
 			Fields:  c.fields,
 		})
 	}
 }
 
-func (c *ctxLogger) Debugf(format string, a ...any) {
+func (c *ctxLogger) Debugf(format string, args ...any) {
 	if c.IsEnabled(DEBUG) {
 		c.log(Record{
 			Level:       DEBUG,
 			MsgOrFormat: format,
-			MsgArgs:     a,
+			MsgArgs:     args,
 			Fields:      c.fields,
 		})
 	}
@@ -231,24 +231,24 @@ func (c *ctxLogger) Debugw(msg string, fields ...Field) {
 	}
 }
 
-func (c *ctxLogger) Trace(a ...any) {
+func (c *ctxLogger) Trace(args ...any) {
 	if c.IsEnabled(TRACE) {
 		c.log(Record{
 			Level:   TRACE,
 			Stack:   Enable,
-			MsgArgs: a,
+			MsgArgs: args,
 			Fields:  c.fields,
 		})
 	}
 }
 
-func (c *ctxLogger) Tracef(format string, a ...any) {
+func (c *ctxLogger) Tracef(format string, args ...any) {
 	if c.IsEnabled(TRACE) {
 		c.log(Record{
 			Level:       TRACE,
 			Stack:       Enable,
 			MsgOrFormat: format,
-			MsgArgs:     a,
+			MsgArgs:     args,
 			Fields:      c.fields,
 		})
 	}

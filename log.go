@@ -130,13 +130,13 @@ func Log(r Record) {
 }
 
 // Fatal logs a message at fatal level and exits the program with an error status.
-func Fatal(a ...any) {
-	getDefLogger().fatal(a...)
+func Fatal(args ...any) {
+	getDefLogger().fatal(args...)
 }
 
 // Fatalf logs a formatted message at fatal level and exits the program with an error status.
-func Fatalf(format string, a ...any) {
-	getDefLogger().fatalf(format, a...)
+func Fatalf(format string, args ...any) {
+	getDefLogger().fatalf(format, args...)
 }
 
 // Fatalw logs a message with extra fields at fatal level and exits the program with an error status.
@@ -145,13 +145,13 @@ func Fatalw(msg string, fields ...Field) {
 }
 
 // Error logs a message at error level.
-func Error(a ...any) {
-	getDefLogger().error(a...)
+func Error(args ...any) {
+	getDefLogger().error(args...)
 }
 
 // Errorf logs a formatted message at error level.
-func Errorf(format string, a ...any) {
-	getDefLogger().errorf(format, a...)
+func Errorf(format string, args ...any) {
+	getDefLogger().errorf(format, args...)
 }
 
 // Errorw logs a message with extra fields at error level.
@@ -160,13 +160,13 @@ func Errorw(msg string, fields ...Field) {
 }
 
 // Warn logs a message at warning level.
-func Warn(a ...any) {
-	getDefLogger().warn(a...)
+func Warn(args ...any) {
+	getDefLogger().warn(args...)
 }
 
 // Warnf logs a formatted message at warning level.
-func Warnf(format string, a ...any) {
-	getDefLogger().warnf(format, a...)
+func Warnf(format string, args ...any) {
+	getDefLogger().warnf(format, args...)
 }
 
 // Warnw logs a message with extra fields at warning level.
@@ -175,13 +175,13 @@ func Warnw(msg string, fields ...Field) {
 }
 
 // Notice logs a message at notice level.
-func Notice(a ...any) {
-	getDefLogger().notice(a...)
+func Notice(args ...any) {
+	getDefLogger().notice(args...)
 }
 
 // Noticef logs a formatted message at notice level.
-func Noticef(format string, a ...any) {
-	getDefLogger().noticef(format, a...)
+func Noticef(format string, args ...any) {
+	getDefLogger().noticef(format, args...)
 }
 
 // Noticew logs a message with extra fields at notice level.
@@ -190,13 +190,13 @@ func Noticew(msg string, fields ...Field) {
 }
 
 // Info logs a message at info level.
-func Info(a ...any) {
-	getDefLogger().info(a...)
+func Info(args ...any) {
+	getDefLogger().info(args...)
 }
 
 // Infof logs a formatted message at info level.
-func Infof(format string, a ...any) {
-	getDefLogger().infof(format, a...)
+func Infof(format string, args ...any) {
+	getDefLogger().infof(format, args...)
 }
 
 // Infow logs a message with extra fields at info level.
@@ -205,13 +205,13 @@ func Infow(msg string, fields ...Field) {
 }
 
 // Debug logs a message at debug level.
-func Debug(a ...any) {
-	getDefLogger().debug(a...)
+func Debug(args ...any) {
+	getDefLogger().debug(args...)
 }
 
 // Debugf logs a formatted message at debug level.
-func Debugf(format string, a ...any) {
-	getDefLogger().debugf(format, a...)
+func Debugf(format string, args ...any) {
+	getDefLogger().debugf(format, args...)
 }
 
 // Debugw logs a message with extra fields at debug level.
@@ -220,13 +220,13 @@ func Debugw(msg string, fields ...Field) {
 }
 
 // Trace logs a message at trace level.
-func Trace(a ...any) {
-	getDefLogger().trace(a...)
+func Trace(args ...any) {
+	getDefLogger().trace(args...)
 }
 
 // Tracef logs a formatted message at trace level.
-func Tracef(format string, a ...any) {
-	getDefLogger().tracef(format, a...)
+func Tracef(format string, args ...any) {
+	getDefLogger().tracef(format, args...)
 }
 
 // Tracew logs a message with extra fields at trace level.
