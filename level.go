@@ -1,5 +1,7 @@
 package olog
 
+import "strings"
+
 // Level is an unsigned 8-bit integer that represents the log level.
 type Level uint8
 
@@ -56,5 +58,5 @@ func (l Level) String() string {
 
 // GetLevelByString returns the Level value corresponding to the given string.
 func GetLevelByString(s string) Level {
-	return strToLevel[s]
+	return strToLevel[strings.ToLower(s)]
 }
