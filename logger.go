@@ -269,10 +269,6 @@ func (l *logger) IsEnabled(level Level) bool {
 }
 
 func (l *logger) log(r Record) {
-	if r.Stack == Default {
-		r.Stack = Disable
-	}
-
 	if r.StackSize == 0 {
 		r.StackSize = defStackSize
 	}
