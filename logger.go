@@ -515,7 +515,7 @@ func (l *logger) output(r Record) {
 	}
 
 	// Record`s app name is not set by outside, this means the app name is safe.
-	if r.App != "" {
+	if r.App == "" {
 		r.App = l.app
 	}
 	r.TimeFmt = l.timeFmt
