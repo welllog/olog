@@ -1,15 +1,40 @@
 package olog
 
+// DynamicLogger is a logger use global default logger, it has most same behavior as the default logger.
+// But can set own application name, caller related options.
 type DynamicLogger struct {
 	Caller     EnableOp // Caller is the enable of caller information in the log message.
 	ShortFile  EnableOp // ShortFile is the enable of short file name in the log message.
 	CallerSkip int8
+	app        string // app is the name of the application.
+}
+
+// SetAppName sets the name of the application for the DynamicLogger.
+// If the application name is not set, it will use the default application name.
+// The method is not thread-safe, so it should be called before any logging operations.
+func (d *DynamicLogger) SetAppName(name string) {
+	d.app = EscapedString(name)
 }
 
 func (d DynamicLogger) Log(r Record) {
 	l := getDefLogger()
 	if l.IsEnabled(r.Level) {
-		l.log(r)
+		if r.Caller == Default {
+			r.Caller = d.Caller
+		}
+
+		if r.ShortFile == Default {
+			r.ShortFile = d.ShortFile
+		}
+
+		if r.StackSize == 0 {
+			r.StackSize = defStackSize
+		}
+
+		r.CallerSkip = defCallerSkip - 1 + d.CallerSkip + r.CallerSkip
+		r.App = d.app
+
+		l.output(r)
 	}
 }
 
@@ -202,6 +227,7 @@ func (d DynamicLogger) printRecord(r Record) {
 		r.Caller = d.Caller
 		r.ShortFile = d.ShortFile
 		r.CallerSkip = defCallerSkip + d.CallerSkip
+		r.App = d.app
 		l.output(r)
 	}
 }

@@ -41,6 +41,15 @@ func WithEntries(logger Logger, entries map[string]any) Logger {
 	}
 }
 
+// WithFields creates a new logger with the provided fields.
+// It may update the provided fields by appending the existing fields from the logger.
+func WithFields(logger Logger, fields ...Field) Logger {
+	return &ctxLogger{
+		Logger: logger,
+		fields: logger.buildFields(fields...),
+	}
+}
+
 func (c *ctxLogger) Log(r Record) {
 	if c.IsEnabled(r.Level) {
 		r.Fields = c.buildFields(r.Fields...)

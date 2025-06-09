@@ -275,6 +275,9 @@ func (l *logger) log(r Record) {
 
 	r.CallerSkip = defCallerSkip + r.CallerSkip
 
+	// force use logger app name, avoid using the app name from Record
+	r.App = l.app
+
 	l.output(r)
 }
 
@@ -511,7 +514,10 @@ func (l *logger) output(r Record) {
 		r.Time = time.Now()
 	}
 
-	r.App = l.app
+	// Record`s app name is not set by outside, this means the app name is safe.
+	if r.App != "" {
+		r.App = l.app
+	}
 	r.TimeFmt = l.timeFmt
 
 	for _, f := range l.beforeEnc {
