@@ -22,11 +22,34 @@ func FilterFields(fields []Field) []Field {
 		return fields
 	}
 
+	if n <= 4 {
+		remain := 0
+	outer:
+		for i := 0; i < n; i++ {
+			f := fields[i]
+			if _, skip := filterField[f.Key]; skip {
+				continue
+			}
+			for j := 0; j < remain; j++ {
+				if fields[j].Key == f.Key {
+					continue outer
+				}
+			}
+			if i != remain {
+				fields[remain], fields[i] = fields[i], fields[remain]
+			}
+			remain++
+		}
+		return fields[:remain]
+	}
+
 	set := make(map[string]struct{}, n)
 	var remain int
 	for idx, field := range fields {
 		if !isSkipField(set, field.Key) {
-			fields[remain], fields[idx] = fields[idx], fields[remain]
+			if idx != remain {
+				fields[remain], fields[idx] = fields[idx], fields[remain]
+			}
 			remain++
 		}
 	}
@@ -104,14 +127,22 @@ func jsonEncode(r Record, buf *encoder.Buffer) {
 	_, _ = encoder.EPrintf(enc, r.MsgOrFormat, r.MsgArgs...)
 	enc.WriteQuote()
 
-	set := make(map[string]struct{}, len(r.Fields))
-	for _, field := range r.Fields {
-		if !isSkipField(set, field.Key) {
-			_, _ = enc.WriteString(`,"`)
-			enc.WriteEscapedString(field.Key)
-			_, _ = enc.WriteString(`":`)
-			enc.WriteValue(field.Value)
+outer:
+	for i, field := range r.Fields {
+		if _, ok := filterField[field.Key]; ok {
+			continue
 		}
+
+		for j := 0; j < i; j++ {
+			if field.Key == r.Fields[j].Key {
+				continue outer
+			}
+		}
+
+		_, _ = enc.WriteString(`,"`)
+		enc.WriteEscapedString(field.Key)
+		_, _ = enc.WriteString(`":`)
+		enc.WriteValue(field.Value)
 	}
 
 	if r.Stack.IsOpen() {
@@ -179,14 +210,21 @@ func plainEncode(r Record, buf *encoder.Buffer, enableColor bool) {
 
 	_, _ = encoder.EPrintf(enc, r.MsgOrFormat, r.MsgArgs...)
 
-	set := make(map[string]struct{}, len(r.Fields))
-	// Loop over the fields of the Record object and write them to the buffer as plain text.
-	for _, field := range r.Fields {
-		if !isSkipField(set, field.Key) {
-			enc.WriteSeparator()
-			enc.WriteName(field.Key)
-			enc.WriteValue(field.Value)
+outer:
+	for i, field := range r.Fields {
+		if _, ok := filterField[field.Key]; ok {
+			continue
 		}
+
+		for j := 0; j < i; j++ {
+			if field.Key == r.Fields[j].Key {
+				continue outer
+			}
+		}
+
+		enc.WriteSeparator()
+		enc.WriteName(field.Key)
+		enc.WriteValue(field.Value)
 	}
 
 	if r.Stack.IsOpen() {

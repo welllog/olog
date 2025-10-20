@@ -27,15 +27,15 @@ const (
 	tagFatal  = "fatal"
 )
 
-// Define a mapping from Level values to their corresponding string representations.
-var levelToStr = map[Level]string{
-	TRACE:  tagTrace,
-	DEBUG:  tagDebug,
-	INFO:   tagInfo,
-	NOTICE: tagNotice,
-	WARN:   tagWarn,
-	ERROR:  tagError,
-	FATAL:  tagFatal,
+// Use an array instead of a map for faster lookup.
+var levelTags = [...]string{
+	tagTrace,
+	tagDebug,
+	tagInfo,
+	tagNotice,
+	tagWarn,
+	tagError,
+	tagFatal,
 }
 
 // Define a mapping from string representations to their corresponding Level values.
@@ -53,7 +53,10 @@ var strToLevel = map[string]Level{
 
 // String returns the string representation of the Level value.
 func (l Level) String() string {
-	return levelToStr[l]
+	if l <= FATAL {
+		return levelTags[l]
+	}
+	return ""
 }
 
 // GetLevelByString returns the Level value corresponding to the given string.
