@@ -35,9 +35,7 @@ func FilterFields(fields []Field) []Field {
 					continue outer
 				}
 			}
-			if i != remain {
-				fields[remain], fields[i] = fields[i], fields[remain]
-			}
+			fields[remain], fields[i] = fields[i], fields[remain]
 			remain++
 		}
 		return fields[:remain]
@@ -47,9 +45,7 @@ func FilterFields(fields []Field) []Field {
 	var remain int
 	for idx, field := range fields {
 		if !isSkipField(set, field.Key) {
-			if idx != remain {
-				fields[remain], fields[idx] = fields[idx], fields[remain]
-			}
+			fields[remain], fields[idx] = fields[idx], fields[remain]
 			remain++
 		}
 	}
