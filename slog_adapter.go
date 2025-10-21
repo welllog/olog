@@ -7,11 +7,19 @@ import (
 	"log/slog"
 )
 
-var slogLevel2Level = map[slog.Level]Level{
-	slog.LevelDebug: DEBUG,
-	slog.LevelInfo:  INFO,
-	slog.LevelWarn:  WARN,
-	slog.LevelError: ERROR,
+func toLevel(l slog.Level) Level {
+	switch l {
+	case slog.LevelDebug:
+		return DEBUG
+	case slog.LevelInfo:
+		return INFO
+	case slog.LevelWarn:
+		return WARN
+	case slog.LevelError:
+		return ERROR
+	default:
+		return INFO
+	}
 }
 
 type SlogHandler struct {
@@ -35,14 +43,14 @@ func NewSlogHandler(logger Logger, handles ...CtxHandle) SlogHandler {
 }
 
 func (s SlogHandler) Enabled(_ context.Context, level slog.Level) bool {
-	return s.logger.IsEnabled(slogLevel2Level[level])
+	return s.logger.IsEnabled(toLevel(level))
 }
 
 func (s SlogHandler) Handle(ctx context.Context, record slog.Record) error {
 	fields := s.ctxHandle(ctx)
 
 	r := Record{
-		Level:       slogLevel2Level[record.Level],
+		Level:       toLevel(record.Level),
 		CallerSkip:  2,
 		MsgOrFormat: record.Message,
 		Fields:      s.logger.buildFields(fields...),

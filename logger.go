@@ -18,7 +18,7 @@ const defStackSize = 5
 // re-use of objects across goroutines.
 var bufPool = sync.Pool{
 	New: func() interface{} {
-		var b [256]byte
+		var b [512]byte
 		return encoder.NewBuffer(b[:0])
 	},
 }

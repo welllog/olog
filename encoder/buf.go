@@ -174,10 +174,15 @@ func (b *Buffer) grow(n int) int {
 
 	l := len(b.buf)
 	nc := l + n
+
 	if nc < 2*c {
 		nc = 2 * c
+	} else if nc < 1024 {
+		// less than 1KB, align to 64-byte boundary
+		nc = (nc + 63) &^ 63
 	} else {
-		nc += smallBufferSize
+		// more than 1KB, align to 256-byte boundary
+		nc = (nc + 255) &^ 255
 	}
 
 	buf := make([]byte, nc)
