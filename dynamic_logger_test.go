@@ -34,7 +34,7 @@ func TestDynamicLoggerCaller(t *testing.T) {
 	logger.Tracef("hello")
 	logger.Tracew("hello")
 	WithContext(logger, context.Background()).Log(Record{MsgOrFormat: "hello"})
-	logger.log(Record{MsgOrFormat: "hello", CallerSkip: -1})
+	logger.Log(Record{MsgOrFormat: "hello"})
 
 	err := validCaller(buf, "olog/dynamic_logger_test.go", 17)
 	if err != nil {

@@ -212,15 +212,6 @@ func (d DynamicLogger) IsEnabled(level Level) bool {
 	return getDefLogger().IsEnabled(level)
 }
 
-func (d DynamicLogger) log(r Record) {
-	r.CallerSkip++
-	getDefLogger().log(r)
-}
-
-func (d DynamicLogger) buildFields(fields ...Field) []Field {
-	return fields
-}
-
 func (d DynamicLogger) printRecord(r Record) {
 	l := getDefLogger()
 	if l.IsEnabled(r.Level) {
