@@ -255,14 +255,19 @@ func TestWithContext(t *testing.T) {
 		"score":   99.9,
 		"success": true,
 	})
-	fields4 := l.buildFields()
+	fields4 := l.(*ctxLogger).buildFields()
 	l.Warn("test 4")
 	if len(fields4) != 5 {
 		t.Fatal("fields length not correct")
 	}
 
-	fields5 := []Field{{Key: "name", Value: "linda"}}
-	fields5 = append(fields5, fields4...)
+	fields5 := []Field{
+		{Key: "ip", Value: "127.0.0.1"},
+		{Key: "name", Value: "linda"},
+		{Key: "score", Value: 99.9},
+		{Key: "success", Value: true},
+		{Key: "uid", Value: 3},
+	}
 	l = WithContext(l, context.WithValue(context.Background(), "name", "linda"))
 	l.Error("test 5")
 	validateFields(t, l, fields5)
@@ -271,10 +276,43 @@ func TestWithContext(t *testing.T) {
 		MsgOrFormat: "test 6"})
 }
 
+func TestWithKV(t *testing.T) {
+	setDefLogger(newLogger())
+	SetWriter(NewWriter(io.Discard))
+
+	logger := WithFields(GetLogger(), Field{Key: "name", Value: "bob"}, Field{Key: "age", Value: 18})
+	logger = WithEntries(logger, map[string]any{
+		"addr":  "new york",
+		"score": 99.5,
+		"age":   20,
+	})
+	logger = WithKV(logger, "age", 22, "score", 100.0, "level", "high", "name", "jack")
+
+	expectedFields := []Field{
+		{Key: "addr", Value: "new york"},
+		{Key: "age", Value: 22},
+		{Key: "level", Value: "high"},
+		{Key: "name", Value: "jack"},
+		{Key: "score", Value: 100.0},
+	}
+	validateFields(t, logger, expectedFields)
+
+	logger = WithKV(logger, "missing_value")
+	expectedFields = []Field{
+		{Key: "addr", Value: "new york"},
+		{Key: "age", Value: 22},
+		{Key: "level", Value: "high"},
+		{Key: "missing_value", Value: "KEYVALS UNPAIRED"},
+		{Key: "name", Value: "jack"},
+		{Key: "score", Value: 100.0},
+	}
+	validateFields(t, logger, expectedFields)
+}
+
 func validateFields(t *testing.T, l Logger, fields []Field) {
-	fs := l.buildFields()
+	fs := l.(*ctxLogger).buildFields()
 	if len(fs) != len(fields) {
-		t.Fatal("fields length not equal")
+		t.Fatalf("fields length not equal, want = %v, got = %v", fields, fs)
 	}
 
 	for i, f := range fs {

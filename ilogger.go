@@ -49,9 +49,6 @@ type Logger interface {
 
 	// IsEnabled returns whether the given log level is enabled or not.
 	IsEnabled(level Level) bool
-
-	log(r Record)
-	buildFields(fields ...Field) []Field
 }
 
 // Field is a struct that represents a key-value pair of additional data to include in a log message.
@@ -59,6 +56,12 @@ type Field struct {
 	Key   string
 	Value any
 }
+
+type AscFields []Field
+
+func (a AscFields) Len() int           { return len(a) }
+func (a AscFields) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a AscFields) Less(i, j int) bool { return a[i].Key < a[j].Key }
 
 // EnableOp is the enable of caller,stack,color information in the log message.
 type EnableOp uint8

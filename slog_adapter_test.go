@@ -23,6 +23,7 @@ func TestSlogHandlerWithAttrs(t *testing.T) {
 
 	validate := func(fds []Field) func(vfds []Field, t *testing.T) {
 		return func(vfds []Field, t *testing.T) {
+			t.Helper()
 			if len(fds) != len(vfds) {
 				t.Fatalf("expected %d fields, got %d", len(vfds), len(fds))
 			}
@@ -57,12 +58,12 @@ func TestSlogHandlerWithAttrs(t *testing.T) {
 			Value: "v3",
 		},
 		{
-			Key:   "p1.p2.k4",
-			Value: "v4",
-		},
-		{
 			Key:   "p1.k5",
 			Value: "v5",
+		},
+		{
+			Key:   "p1.p2.k4",
+			Value: "v4",
 		},
 	}
 	vfn2 := validate(fields)
@@ -100,7 +101,7 @@ func TestSlogCaller(t *testing.T) {
 	logger.DebugContext(ctx, "hello")
 	logger.With(slog.String("k1", "v1")).WithGroup("p1").With(slog.String("k2", "v2")).Info("yes")
 
-	err := validCaller(buf, "olog/slog_adapter_test.go", 92)
+	err := validCaller(buf, "olog/slog_adapter_test.go", 93)
 	if err != nil {
 		t.Error(err)
 	}

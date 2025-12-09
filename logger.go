@@ -175,9 +175,7 @@ func WithLoggerAfterEnc(f ...AfterEncHook) LoggerOption {
 }
 
 func (l *logger) Log(r Record) {
-	if l.IsEnabled(r.Level) {
-		l.log(r)
-	}
+	l.log(r)
 }
 
 func (l *logger) Fatal(args ...any) {
@@ -269,6 +267,10 @@ func (l *logger) IsEnabled(level Level) bool {
 }
 
 func (l *logger) log(r Record) {
+	if !l.IsEnabled(r.Level) {
+		return
+	}
+
 	if r.StackSize == 0 {
 		r.StackSize = defStackSize
 	}
@@ -485,10 +487,6 @@ func (l *logger) tracew(msg string, fields ...Field) {
 			Fields:      fields,
 		})
 	}
-}
-
-func (l *logger) buildFields(fields ...Field) []Field {
-	return fields
 }
 
 func (l *logger) output(r Record) {
