@@ -84,6 +84,22 @@ func TestJsonEncoder_WriteValue(t *testing.T) {
 			value: []int{1, 4, 10},
 			want:  "\"[1,4,10]\"",
 		},
+		{
+			value: func() *string { s := "hello pointer"; return &s }(),
+			want:  "\"hello pointer\"",
+		},
+		{
+			value: (*string)(nil),
+			want:  "null",
+		},
+		{
+			value: func() *int { i := 123; return &i }(),
+			want:  "123",
+		},
+		{
+			value: (*int)(nil),
+			want:  "null",
+		},
 	}
 
 	e := JsonEncoder{&Buffer{}}

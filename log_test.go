@@ -602,3 +602,16 @@ type discard struct{}
 func (d discard) Write(p []byte) (int, error) {
 	return len(p), nil
 }
+
+func BenchmarkPointerField(b *testing.B) {
+	logger := NewLogger(WithLoggerWriter(NewWriter(discard{})), WithLoggerCaller(false))
+	s := "test_val"
+	n := 12345
+	t := true
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		logger.Infow("test", Field{Key: "str", Value: &s}, Field{Key: "num", Value: &n}, Field{Key: "bool", Value: &t})
+	}
+}

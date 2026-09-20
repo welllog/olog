@@ -309,6 +309,18 @@ func TestWithKV(t *testing.T) {
 	validateFields(t, logger, expectedFields)
 }
 
+func TestWithKV_DuplicateKey(t *testing.T) {
+	setDefLogger(newLogger())
+	SetWriter(NewWriter(io.Discard))
+
+	logger := WithKV(GetLogger(), "tag", "old", "tag", "new", "a", 1, "a", 2)
+	expectedFields := []Field{
+		{Key: "a", Value: 2},
+		{Key: "tag", Value: "new"},
+	}
+	validateFields(t, logger, expectedFields)
+}
+
 func validateFields(t *testing.T, l Logger, fields []Field) {
 	fs := l.(*ctxLogger).buildFields()
 	if len(fs) != len(fields) {

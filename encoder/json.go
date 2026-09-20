@@ -79,6 +79,14 @@ func (j JsonEncoder) WriteValue(value any) {
 		_ = j.WriteByte(quote)
 		j.WriteEscapedString(v)
 		_ = j.WriteByte(quote)
+	case *string:
+		if v == nil {
+			j.WriteNull()
+		} else {
+			_ = j.WriteByte(quote)
+			j.WriteEscapedString(*v)
+			_ = j.WriteByte(quote)
+		}
 	case []byte:
 		_ = j.WriteByte(quote)
 		j.WriteBase64(v)
@@ -91,34 +99,120 @@ func (j JsonEncoder) WriteValue(value any) {
 		_ = j.WriteByte(quote)
 		j.WriteTime(v, time.RFC3339)
 		_ = j.WriteByte(quote)
+	case *time.Time:
+		if v == nil {
+			j.WriteNull()
+		} else {
+			_ = j.WriteByte(quote)
+			j.WriteTime(*v, time.RFC3339)
+			_ = j.WriteByte(quote)
+		}
 	case nil:
 		j.WriteNull()
 	case int:
 		j.WriteInt64(int64(v))
+	case *int:
+		if v == nil {
+			j.WriteNull()
+		} else {
+			j.WriteInt64(int64(*v))
+		}
 	case int8:
 		j.WriteInt64(int64(v))
+	case *int8:
+		if v == nil {
+			j.WriteNull()
+		} else {
+			j.WriteInt64(int64(*v))
+		}
 	case int16:
 		j.WriteInt64(int64(v))
+	case *int16:
+		if v == nil {
+			j.WriteNull()
+		} else {
+			j.WriteInt64(int64(*v))
+		}
 	case int32:
 		j.WriteInt64(int64(v))
+	case *int32:
+		if v == nil {
+			j.WriteNull()
+		} else {
+			j.WriteInt64(int64(*v))
+		}
 	case int64:
 		j.WriteInt64(v)
+	case *int64:
+		if v == nil {
+			j.WriteNull()
+		} else {
+			j.WriteInt64(*v)
+		}
 	case uint:
 		j.WriteUint64(uint64(v))
+	case *uint:
+		if v == nil {
+			j.WriteNull()
+		} else {
+			j.WriteUint64(uint64(*v))
+		}
 	case uint8:
 		j.WriteUint64(uint64(v))
+	case *uint8:
+		if v == nil {
+			j.WriteNull()
+		} else {
+			j.WriteUint64(uint64(*v))
+		}
 	case uint16:
 		j.WriteUint64(uint64(v))
+	case *uint16:
+		if v == nil {
+			j.WriteNull()
+		} else {
+			j.WriteUint64(uint64(*v))
+		}
 	case uint32:
 		j.WriteUint64(uint64(v))
+	case *uint32:
+		if v == nil {
+			j.WriteNull()
+		} else {
+			j.WriteUint64(uint64(*v))
+		}
 	case uint64:
 		j.WriteUint64(v)
+	case *uint64:
+		if v == nil {
+			j.WriteNull()
+		} else {
+			j.WriteUint64(*v)
+		}
 	case float32:
 		j.WriteFloat(float64(v), 32)
+	case *float32:
+		if v == nil {
+			j.WriteNull()
+		} else {
+			j.WriteFloat(float64(*v), 32)
+		}
 	case float64:
 		j.WriteFloat(v, 64)
+	case *float64:
+		if v == nil {
+			j.WriteNull()
+		} else {
+			j.WriteFloat(*v, 64)
+		}
 	case bool:
 		j.WriteBool(v)
+	case *bool:
+		if v == nil {
+			j.WriteNull()
+		} else {
+			j.WriteBool(*v)
+		}
 	case fmt.Formatter:
 		_ = j.WriteByte(quote)
 		v.Format(j, 'v')
@@ -146,7 +240,7 @@ func (j JsonEncoder) WriteValue(value any) {
 
 func (j JsonEncoder) Write(s []byte) (n int, err error) {
 	l := j.Len()
-	j.growCap(len(s) + 8)
+	j.Grow(len(s) + 8)
 
 	start := 0
 	for i := 0; i < len(s); {
@@ -219,7 +313,7 @@ func (j JsonEncoder) Flag(c int) bool {
 }
 
 func (j JsonEncoder) WriteEscapedString(s string) {
-	j.growCap(len(s) + 8)
+	j.Grow(len(s) + 8)
 
 	start := 0
 	for i := 0; i < len(s); {

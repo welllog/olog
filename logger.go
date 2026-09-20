@@ -18,7 +18,7 @@ const defStackSize = 5
 // re-use of objects across goroutines.
 var bufPool = sync.Pool{
 	New: func() interface{} {
-		var b [512]byte
+		var b [1024]byte
 		return encoder.NewBuffer(b[:0])
 	},
 }
@@ -28,8 +28,14 @@ func getBuf() *encoder.Buffer {
 	return bufPool.Get().(*encoder.Buffer)
 }
 
+// maxBufCap is the maximum capacity of buffer to keep in the pool to prevent memory leaks.
+const maxBufCap = 64 * 1024
+
 // putBuf to return a *Buffer to the pool.
 func putBuf(buf *encoder.Buffer) {
+	if buf.Cap() > maxBufCap {
+		return
+	}
 	buf.Reset()
 	bufPool.Put(buf)
 }

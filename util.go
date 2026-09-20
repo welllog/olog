@@ -25,7 +25,7 @@ func shortFile(file string) string {
 	var count int
 	idx := -1
 	for i := len(file) - 5; i >= 0; i-- {
-		if file[i] == '/' {
+		if file[i] == '/' || file[i] == '\\' {
 			count++
 			if count == 2 {
 				idx = i
