@@ -58,6 +58,7 @@ func (s *SlogHandler) Handle(ctx context.Context, record slog.Record) error {
 	fields := s.ctxHandle(ctx)
 
 	r := Record{
+		PC:          record.PC,
 		Level:       toLevel(record.Level),
 		CallerSkip:  3,
 		MsgOrFormat: record.Message,

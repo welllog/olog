@@ -59,6 +59,22 @@ func TestPlainEncoder_WriteValue(t *testing.T) {
 			value: map[string]string{"name": "lisi", "age": "18"},
 			want:  "map[age:18 name:lisi]",
 		},
+		{
+			value: func() *string { s := "hello pointer"; return &s }(),
+			want:  "hello pointer",
+		},
+		{
+			value: (*string)(nil),
+			want:  "null",
+		},
+		{
+			value: func() *int { i := 123; return &i }(),
+			want:  "123",
+		},
+		{
+			value: (*int)(nil),
+			want:  "null",
+		},
 	}
 	e := PlainEncoder{&Buffer{}}
 

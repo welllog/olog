@@ -404,14 +404,23 @@ func (c *ctxLogger) buildFields(fields ...Field) []Field {
 }
 
 func uniqueAscFields(fields []Field) []Field {
-	sort.Sort(AscFields(fields))
-	dst := fields[:1]
-	for i := 1; i < len(fields); i++ {
-		if fields[i].Key != fields[i-1].Key {
-			dst = append(dst, fields[i])
-		}
+	if len(fields) <= 1 {
+		return fields
 	}
-	return dst
+
+	sort.Stable(AscFields(fields))
+	w := 0
+	n := len(fields)
+	for i := 0; i < n; {
+		j := i + 1
+		for j < n && fields[j].Key == fields[i].Key {
+			j++
+		}
+		fields[w] = fields[j-1]
+		w++
+		i = j
+	}
+	return fields[:w]
 }
 
 func toString(key any) string {

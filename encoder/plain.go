@@ -40,40 +40,130 @@ func (p PlainEncoder) WriteValue(value any) {
 	switch v := value.(type) {
 	case string:
 		_, _ = p.WriteString(v)
+	case *string:
+		if v == nil {
+			p.WriteNull()
+		} else {
+			_, _ = p.WriteString(*v)
+		}
 	case []byte:
 		p.WriteBase64(v)
 	case error:
 		_, _ = p.WriteString(v.Error())
 	case time.Time:
 		p.WriteTime(v, time.RFC3339)
+	case *time.Time:
+		if v == nil {
+			p.WriteNull()
+		} else {
+			p.WriteTime(*v, time.RFC3339)
+		}
 	case nil:
 		p.WriteNull()
 	case int:
 		p.WriteInt64(int64(v))
+	case *int:
+		if v == nil {
+			p.WriteNull()
+		} else {
+			p.WriteInt64(int64(*v))
+		}
 	case int8:
 		p.WriteInt64(int64(v))
+	case *int8:
+		if v == nil {
+			p.WriteNull()
+		} else {
+			p.WriteInt64(int64(*v))
+		}
 	case int16:
 		p.WriteInt64(int64(v))
+	case *int16:
+		if v == nil {
+			p.WriteNull()
+		} else {
+			p.WriteInt64(int64(*v))
+		}
 	case int32:
 		p.WriteInt64(int64(v))
+	case *int32:
+		if v == nil {
+			p.WriteNull()
+		} else {
+			p.WriteInt64(int64(*v))
+		}
 	case int64:
 		p.WriteInt64(v)
+	case *int64:
+		if v == nil {
+			p.WriteNull()
+		} else {
+			p.WriteInt64(*v)
+		}
 	case uint:
 		p.WriteUint64(uint64(v))
+	case *uint:
+		if v == nil {
+			p.WriteNull()
+		} else {
+			p.WriteUint64(uint64(*v))
+		}
 	case uint8:
 		p.WriteUint64(uint64(v))
+	case *uint8:
+		if v == nil {
+			p.WriteNull()
+		} else {
+			p.WriteUint64(uint64(*v))
+		}
 	case uint16:
 		p.WriteUint64(uint64(v))
+	case *uint16:
+		if v == nil {
+			p.WriteNull()
+		} else {
+			p.WriteUint64(uint64(*v))
+		}
 	case uint32:
 		p.WriteUint64(uint64(v))
+	case *uint32:
+		if v == nil {
+			p.WriteNull()
+		} else {
+			p.WriteUint64(uint64(*v))
+		}
 	case uint64:
 		p.WriteUint64(v)
+	case *uint64:
+		if v == nil {
+			p.WriteNull()
+		} else {
+			p.WriteUint64(*v)
+		}
 	case float32:
 		p.WriteFloat(float64(v), 32)
+	case *float32:
+		if v == nil {
+			p.WriteNull()
+		} else {
+			p.WriteFloat(float64(*v), 32)
+		}
 	case float64:
 		p.WriteFloat(v, 64)
+	case *float64:
+		if v == nil {
+			p.WriteNull()
+		} else {
+			p.WriteFloat(*v, 64)
+		}
 	case bool:
 		p.WriteBool(v)
+	case *bool:
+		if v == nil {
+			p.WriteNull()
+		} else {
+			p.WriteBool(*v)
+		}
 	case fmt.Formatter:
 		v.Format(p, 'v')
 	case fmt.Stringer:

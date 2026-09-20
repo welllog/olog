@@ -134,7 +134,8 @@ func TestEPrintfNoArgs(t *testing.T) {
 
 func TestEPrintfEmptyFormat(t *testing.T) {
 	buf := PlainEncoder{&Buffer{}}
-	n, err := EPrintf(buf, "", "hello", "world")
+	var emptyFormat string
+	n, err := EPrintf(buf, emptyFormat, "hello", "world")
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}

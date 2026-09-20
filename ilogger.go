@@ -80,6 +80,7 @@ const (
 type EncodeFunc func(Record, *encoder.Buffer)
 
 type Record struct {
+	PC          uintptr  // PC is the program counter for caller, if set, Frames() directly uses it
 	Level       Level    // Level is the severity level of the log message.
 	Caller      EnableOp // Caller is the enable of caller information in the log message.
 	Stack       EnableOp // Stack is the enable of stack trace information in the log message.
@@ -97,6 +98,11 @@ type Record struct {
 }
 
 func (r Record) Frames() *runtime.Frames {
+	if r.PC != 0 {
+		pcs := [1]uintptr{r.PC}
+		return runtime.CallersFrames(pcs[:])
+	}
+
 	var stackSize int
 	if r.Stack.IsOpen() && r.StackSize > 0 {
 		stackSize = int(r.StackSize)
@@ -104,6 +110,12 @@ func (r Record) Frames() *runtime.Frames {
 		stackSize = 1
 	} else {
 		return nil
+	}
+
+	if stackSize == 1 {
+		var pcs [1]uintptr
+		n := runtime.Callers(int(r.CallerSkip+1), pcs[:])
+		return runtime.CallersFrames(pcs[:n])
 	}
 
 	pc := make([]uintptr, stackSize)

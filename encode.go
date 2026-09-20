@@ -27,7 +27,7 @@ func FilterFields(fields []Field) []Field {
 	outer:
 		for i := 0; i < n; i++ {
 			f := fields[i]
-			if _, skip := filterField[f.Key]; skip {
+			if isFilterField(f.Key) {
 				continue
 			}
 			for j := 0; j < remain; j++ {
@@ -53,12 +53,11 @@ func FilterFields(fields []Field) []Field {
 }
 
 func isSkipField(keysSet map[string]struct{}, key string) bool {
-	_, ok := filterField[key]
-	if ok {
+	if isFilterField(key) {
 		return true
 	}
 
-	_, ok = keysSet[key]
+	_, ok := keysSet[key]
 	if ok {
 		return true
 	}
@@ -74,16 +73,15 @@ var (
 	fieldContent = "content"
 	fieldCaller  = "caller"
 	fieldStack   = "stack"
-
-	filterField = map[string]struct{}{
-		fieldTime:    {},
-		fieldLevel:   {},
-		fieldApp:     {},
-		fieldContent: {},
-		fieldCaller:  {},
-		fieldStack:   {},
-	}
 )
+
+func isFilterField(key string) bool {
+	switch key {
+	case "@timestamp", "level", "app", "content", "caller", "stack":
+		return true
+	}
+	return false
+}
 
 // jsonEncode to encode a Record object as JSON to the buffer.
 func jsonEncode(r Record, buf *encoder.Buffer) {
@@ -125,7 +123,7 @@ func jsonEncode(r Record, buf *encoder.Buffer) {
 
 outer:
 	for i, field := range r.Fields {
-		if _, ok := filterField[field.Key]; ok {
+		if isFilterField(field.Key) {
 			continue
 		}
 
@@ -208,7 +206,7 @@ func plainEncode(r Record, buf *encoder.Buffer, enableColor bool) {
 
 outer:
 	for i, field := range r.Fields {
-		if _, ok := filterField[field.Key]; ok {
+		if isFilterField(field.Key) {
 			continue
 		}
 

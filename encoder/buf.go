@@ -139,14 +139,6 @@ func (b *Buffer) WriteBase64(p []byte) {
 	base64.StdEncoding.Encode(b.buf[m:], p)
 }
 
-func (b *Buffer) growCap(n int) {
-	m, ok := b.tryGrowByReslice(n)
-	if !ok {
-		m = b.grow(n)
-	}
-	b.buf = b.buf[:m]
-}
-
 // tryGrowByReslice is a inlineable version of grow for the fast-case where the
 // internal buffer only needs to be resliced.
 // It returns the index where bytes should be written and whether it succeeded.
